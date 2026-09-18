@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Programación IV · Express</title>
+<link rel="stylesheet" href="css/clase.css">
+</head>
+<body>
+
+<!-- ============================ PANEL DE INICIO ============================ -->
+<div id="vista-panel" class="vista-panel" hidden>
+    <header class="cabecera">
+        <img src="img/logo-utn.png" alt="UTN" class="logo">
+        <div class="titulo-clase">
+            <h1>Programación IV</h1>
+            <p>Express: de un servidor mínimo a una API con login</p>
+        </div>
+    </header>
+    <main class="contenido-panel">
+        <p class="aviso-archivo" id="aviso-archivo" hidden>
+            Abriste este archivo directo desde el disco y las clases no van a funcionar así.
+            Ejecutá <code>python -m http.server 8000</code> en esta carpeta y entrá a
+            <code>http://localhost:8000/</code>.
+        </p>
+        <div class="lista-clases" id="lista-clases"></div>
+    </main>
+</div>
+
+<!-- ============================ UNA CLASE ============================ -->
+<div id="vista-clase" hidden>
+
+<header class="cabecera">
+    <img src="img/logo-utn.png" alt="UTN" class="logo">
+    <a class="boton fantasma" href="#/" title="Volver a la lista de clases">&larr; Clases</a>
+    <div class="titulo-clase">
+        <h1 id="titulo-de-clase"></h1>
+        <p id="subtitulo-de-clase"></p>
+    </div>
+    <div class="progreso">
+        <div class="progreso-fondo"><div class="progreso-barra" id="progreso-barra"></div></div>
+        <span id="progreso-texto">0 de 14</span>
+    </div>
+    <button class="boton fantasma" id="boton-reiniciar" title="Borrar todo y empezar de cero">Reiniciar</button>
+</header>
+
+<main class="tablero">
+
+    <!-- ============================ ÍNDICE ============================ -->
+    <nav class="columna-indice">
+        <div id="indice-pasos"></div>
+    </nav>
+
+    <!-- ============================ TEORÍA ============================ -->
+    <section class="columna-teoria" id="columna-teoria">
+
+        <div class="encabezado-paso">
+            <span class="numero-actual" id="numero-actual">1.</span>
+            <h2 id="titulo-actual"></h2>
+            <span class="minutos" id="minutos-actual">~10 min</span>
+        </div>
+
+        <article class="teoria" id="teoria"></article>
+
+        <section class="bloque-consigna">
+            <h3 class="titulo-consigna">Tu turno</h3>
+            <div id="consigna"></div>
+
+            <div class="acciones">
+                <button class="boton primario" id="boton-verificar">Verificar</button>
+                <button class="boton fantasma" id="boton-solucion">Ver la solución</button>
+            </div>
+
+            <div class="resultado" id="resultado" hidden></div>
+        </section>
+
+        <div class="navegacion-pasos">
+            <button class="boton fantasma" id="anterior">&larr; Anterior</button>
+            <button class="boton fantasma" id="siguiente">Siguiente &rarr;</button>
+        </div>
+    </section>
+
+    <!-- ============================ TALLER ============================ -->
+    <section class="columna-taller">
+
+        <div class="editor-caja" id="caja-editor">
+            <div class="solapas-archivos" id="solapas-archivos"></div>
+            <div class="aviso-reinicio" id="aviso-reinicio" hidden>
+                Cambiaste el código y el servidor sigue corriendo el de antes.
+                Pará con <kbd>Ctrl</kbd>+<kbd>C</kbd> y volvé a hacer <code>node app.js</code>.
+            </div>
+            <div class="area-editor">
+                <pre class="regleta" id="regleta">1
+</pre>
+                <div class="envoltorio-editor">
+                    <pre class="pintado" id="pintado" aria-hidden="true"></pre>
+                    <textarea id="editor" spellcheck="false" autocomplete="off"
+                              autocapitalize="off" autocorrect="off" wrap="off"></textarea>
+                    <div class="editor-vacio" id="editor-vacio">
+                        <p>Todavía no hay ningún archivo.</p>
+                        <p>El proyecto se crea desde la consola de abajo, con
+                           <code>npm init -y</code>.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-inferior">
+            <div class="solapas-panel">
+                <button data-panel="consola" class="solapa activa">Consola</button>
+                <button data-panel="pedidos" class="solapa">Pedidos</button>
+                <button data-panel="rutas" class="solapa">Rutas</button>
+            </div>
+
+            <!-- ---------------- CONSOLA ---------------- -->
+            <div class="panel" id="panel-consola">
+                <div class="sugerencias" id="sugerencias-consola"></div>
+                <div class="consola">
+                    <div class="salida-consola" id="salida-consola"></div>
+                    <div class="linea-entrada">
+                        <span class="prompt" id="prompt-consola">proyecto $</span>
+                        <input type="text" id="entrada-consola" spellcheck="false"
+                               autocomplete="off" autocapitalize="off" autocorrect="off">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ---------------- PEDIDOS ---------------- -->
+            <div class="panel" id="panel-pedidos" hidden>
+                <div class="sugerencias" id="sugerencias-pedidos"></div>
+                <div class="formulario-pedido">
+                    <select id="metodo-pedido">
+                        <option>GET</option>
+                        <option>POST</option>
+                        <option>PUT</option>
+                        <option>DELETE</option>
+                        <option>PATCH</option>
+                    </select>
+                    <input type="text" id="ruta-pedido" value=""
+                           spellcheck="false" autocomplete="off">
+                    <button class="boton primario" id="enviar-pedido">Enviar</button>
+                </div>
+                <div class="caja-cuerpo" id="caja-cabeceras-pedido">
+                    <label for="cabeceras-pedido">Cabeceras (una por línea, <code>Nombre: valor</code>)</label>
+                    <textarea id="cabeceras-pedido" spellcheck="false" rows="2"
+                              placeholder="Authorization: Bearer &lt;pegá acá el token del login&gt;"></textarea>
+                </div>
+                <div class="caja-cuerpo" id="caja-cuerpo-pedido" hidden>
+                    <label for="cuerpo-pedido">Cuerpo (JSON)</label>
+                    <textarea id="cuerpo-pedido" spellcheck="false" rows="4"></textarea>
+                </div>
+                <div class="respuesta" id="respuesta-pedido">
+                    <p class="vacio" id="texto-vacio-pedidos"></p>
+                </div>
+            </div>
+
+            <!-- ---------------- RUTAS ---------------- -->
+            <div class="panel" id="panel-rutas" hidden>
+                <div id="lista-rutas"></div>
+            </div>
+        </div>
+    </section>
+</main>
+
+</div>
+
+<script src="js/clases.js"></script>
+<script src="contenido/inicial.js"></script>
+<script src="contenido/avanzada.js"></script>
+<script src="js/runner.js"></script>
+<script src="js/terminal.js"></script>
+<script src="js/app.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
