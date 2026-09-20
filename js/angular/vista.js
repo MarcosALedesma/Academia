@@ -16,6 +16,15 @@
 
 var VistaAngular = (function () {
 
+    /* La versión sale del propio <script src="...vista.js?v=N"> del index.html, así
+       hay UN solo lugar donde cambiarla. Se la pasa al iframe para que tampoco
+       quede viejo en la caché. */
+    var VERSION = (function () {
+        var origen = document.currentScript && document.currentScript.src || '';
+        var m = /[?&]v=([^&]+)/.exec(origen);
+        return m ? m[1] : '';
+    })();
+
     var LIMITE_MS = 5000;
 
     var marco = null;          // el <iframe>
@@ -55,7 +64,7 @@ var VistaAngular = (function () {
         /* Sin allow-same-origin: el código del alumno no puede leer el
            localStorage donde se guarda su avance ni tocar la página madre. */
         marco.setAttribute('sandbox', 'allow-scripts');
-        marco.src = 'vista-angular.html';
+        marco.src = 'vista-angular.html' + (VERSION ? '?v=' + VERSION : '');
         contenedor.innerHTML = '';
         contenedor.appendChild(marco);
     }

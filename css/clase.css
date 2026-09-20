@@ -831,15 +831,23 @@ kbd {
     padding: 22px 24px;
     background: var(--panel);
     border: 1px solid var(--borde);
-    border-left: 4px solid var(--azul);
+    --acento: var(--azul);
+    --acento-oscuro: var(--azul-oscuro);
+    border-left: 4px solid var(--acento);
     border-radius: 8px;
     color: inherit;
     text-decoration: none;
 }
-.tarjeta-clase:hover { border-color: var(--borde-fuerte); border-left-color: var(--azul-oscuro); }
-.tarjeta-clase:focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
+.tarjeta-clase:hover { border-color: var(--borde-fuerte); border-left-color: var(--acento-oscuro); }
+.tarjeta-clase:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
 
-.tarjeta-clase .nivel { grid-area: nivel; font-size: 0.85rem; font-weight: 600; color: var(--azul-oscuro); }
+.tarjeta-clase .nivel { grid-area: nivel; font-size: 0.85rem; font-weight: 600; color: var(--acento-oscuro); }
+
+/* Color de cada clase: se elige con `color` en clases.js. Sin `color`, azul.
+   Cambia la banderita del borde izquierdo y el texto del nivel. */
+.tarjeta-clase.color-verde   { --acento: var(--verde);   --acento-oscuro: #2d5f17; }
+.tarjeta-clase.color-violeta { --acento: var(--violeta); --acento-oscuro: #6b1fb3; }
+.tarjeta-clase.color-azul    { --acento: var(--azul);    --acento-oscuro: var(--azul-oscuro); }
 .tarjeta-clase h2 { grid-area: titulo; margin: 0; font-size: 1.35rem; line-height: 1.25; }
 .tarjeta-clase .descripcion { grid-area: detalle; margin: 6px 0 16px; color: var(--tinta-suave); }
 .tarjeta-clase .boton { grid-area: boton; align-self: end; justify-self: start; }
@@ -1044,4 +1052,27 @@ kbd {
     .ng-taller { grid-template-rows: none; min-height: 90vh; }
     .ng-fila-superior { grid-template-columns: minmax(0, 1fr); grid-template-rows: 340px 320px; }
     .ng-tablero .columna-indice { display: none; }
+}
+
+
+/* ==========================================================================
+   Tarjeta de una clase en desarrollo: se ve, pero no se puede abrir.
+   ========================================================================== */
+.tarjeta-clase.en-desarrollo {
+    grid-template-columns: 1fr;
+    grid-template-areas: "nivel" "titulo" "detalle" "boton";
+    cursor: default;
+}
+.tarjeta-clase.en-desarrollo:hover { border-color: var(--borde); border-left-color: var(--acento); }
+.tarjeta-clase.en-desarrollo .nivel,
+.tarjeta-clase.en-desarrollo h2 { color: var(--tinta-suave); }
+.etiqueta-desarrollo {
+    grid-area: boton;
+    justify-self: start;
+    padding: 4px 14px;
+    border: 1px dashed var(--borde-fuerte);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--tinta-suave);
 }

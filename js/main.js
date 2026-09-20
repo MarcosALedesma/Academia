@@ -30,7 +30,30 @@ function escaparAtributo(texto) {
  * Panel de inicio
  * ------------------------------------------------------------------------ */
 
+/* Clase CSS del color de una tarjeta ('verde', 'violeta', 'azul'). Sólo letras:
+   el valor viene de clases.js y termina dentro de un atributo class. */
+function claseDeColor(clase) {
+    const c = String(clase.color || '').replace(/[^a-z]/g, '');
+    return c ? ' color-' + c : '';
+}
+
+/* Una clase que todavía no existe: se ve en el panel pero no se puede abrir.
+   No es un <a> (no hay a dónde ir) ni lee avance (no tiene clave de guardado). */
+function tarjetaEnDesarrollo(clase) {
+    const el = document.createElement('div');
+    el.className = 'tarjeta-clase en-desarrollo' + claseDeColor(clase);
+    el.setAttribute('aria-disabled', 'true');
+    el.innerHTML =
+        '<span class="nivel">' + clase.nivel + '</span>' +
+        '<h2>' + clase.titulo + '</h2>' +
+        '<p class="descripcion">' + clase.subtitulo + '</p>' +
+        '<span class="etiqueta-desarrollo">En desarrollo</span>';
+    return el;
+}
+
 function tarjetaDeClase(clase) {
+    if (clase.enDesarrollo) return tarjetaEnDesarrollo(clase);
+
     const pasos = CONTENIDO[clase.id] || [];
     const avance = leerAvance(clase);
     const completados = (avance && avance.completados) || {};
@@ -52,7 +75,7 @@ function tarjetaDeClase(clase) {
     else if (empezada) { situacion = 'Vas por el paso ' + (actual + 1) + ': ' + pasos[actual].titulo; boton = 'Continuar'; }
 
     const el = document.createElement('a');
-    el.className = 'tarjeta-clase';
+    el.className = 'tarjeta-clase' + claseDeColor(clase);
     el.href = '#/' + clase.id;
     el.innerHTML =
         '<span class="nivel">' + clase.nivel + '</span>' +
@@ -118,7 +141,7 @@ function mostrarClase(clase) {
 
 function claseDeLaRuta() {
     const id = location.hash.replace(/^#\/?/, '');
-    return CLASES.find(function (c) { return c.id === id; }) || null;
+    return CLASES.find(function (c) { return c.id === id && !c.enDesarrollo; }) || null;
 }
 
 const claseElegida = claseDeLaRuta();

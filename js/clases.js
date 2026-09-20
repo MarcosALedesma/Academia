@@ -12,6 +12,13 @@
  * Excepción: las clases con `tipo: 'angular'` no usan ni motor ni terminal.
  * Tienen su propia pantalla (#vista-angular) y su propio controlador
  * (js/angular/controlador.js). Sólo comparten con Express el panel de inicio.
+ *
+ * Campos opcionales de cualquier clase:
+ *   color         'verde' | 'violeta' | 'azul'. Color de la banderita de su tarjeta en el
+ *                 panel. Sin este campo, azul.
+ *   enDesarrollo  true -> la tarjeta se ve pero sin botón ni avance, y no se puede abrir.
+ *                 Sólo necesita id, nivel, titulo y subtitulo: no hace falta clave, motor
+ *                 ni contenido.
  * ========================================================================== */
 
 /* Lo llenan los archivos de contenido/: CONTENIDO.inicial, CONTENIDO.avanzada. */
@@ -20,6 +27,7 @@ const CONTENIDO = {};
 const CLASES = [
     {
         id: 'inicial',
+        color: 'verde',
         nivel: 'Inicial',
         titulo: 'Servidores con Express',
         subtitulo: 'Levantar un servidor, crear endpoints y armar un CRUD sobre un arreglo',
@@ -38,6 +46,7 @@ const CLASES = [
     },
     {
         id: 'avanzada',
+        color: 'verde',
         nivel: 'Avanzada',
         titulo: 'API profesional con Express',
         subtitulo: 'Arquitectura en capas, base de datos, bcrypt, JWT y guards',
@@ -59,6 +68,7 @@ const CLASES = [
     },
     {
         id: 'angular',
+        color: 'violeta',
         nivel: 'Inicial',
         titulo: 'Fundamentos de Angular',
         subtitulo: 'Componentes, bindings, directivas y comunicación entre componentes',
@@ -66,5 +76,14 @@ const CLASES = [
         clave: 'clase_angular_v1',
         motor: 'angular',                     // no usa js/motor/: corre Angular real (vista-angular.html)
         tipo: 'angular'                       // main.js elige la pantalla con este campo
+    },
+    {
+        id: 'bdd',
+        color: 'azul',
+        nivel: 'Se esta codeando volve luego',
+        titulo: 'Bases de datos',
+        subtitulo: 'Qsy master',
+
+        enDesarrollo: true        // el panel la muestra, pero no se puede abrir
     }
 ];
