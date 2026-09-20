@@ -68,7 +68,7 @@ function tarjetaDeClase(clase) {
 }
 
 function mostrarPanel() {
-    document.title = 'Programación IV · Express';
+    document.title = 'Programación IV';
     document.getElementById('vista-panel').hidden = false;
     const lista = document.getElementById('lista-clases');
     lista.innerHTML = '';
@@ -80,9 +80,22 @@ function mostrarPanel() {
  * Una clase
  * ------------------------------------------------------------------------ */
 
+function mostrarClaseAngular(clase) {
+    /* Las clases de Angular no tienen terminal ni servidor: van por su propia
+       pantalla y su propio controlador (js/angular/controlador.js). Lo único
+       compartido con Express es CLASE_ACTUAL/PASOS, que el controlador lee. */
+    document.title = clase.titulo + ' · Programación IV';
+    document.getElementById('ng-titulo-de-clase').textContent = clase.titulo;
+    document.getElementById('ng-subtitulo-de-clase').textContent = clase.subtitulo;
+    document.getElementById('vista-angular').hidden = false;
+    ClaseAngular.arrancar();
+}
+
 function mostrarClase(clase) {
     CLASE_ACTUAL = clase;
     PASOS = CONTENIDO[clase.id];
+
+    if (clase.tipo === 'angular') { mostrarClaseAngular(clase); return; }
 
     document.title = clase.titulo + ' · Programación IV';
     document.getElementById('titulo-de-clase').textContent = clase.titulo;
@@ -112,6 +125,7 @@ const claseElegida = claseDeLaRuta();
 if (claseElegida) mostrarClase(claseElegida); else mostrarPanel();
 
 window.addEventListener('hashchange', function () {
-    if (typeof guardarYa === 'function' && CLASE_ACTUAL) guardarYa();
+    if (CLASE_ACTUAL && CLASE_ACTUAL.tipo === 'angular') ClaseAngular.guardarYa();
+    else if (typeof guardarYa === 'function' && CLASE_ACTUAL) guardarYa();
     location.reload();
 });

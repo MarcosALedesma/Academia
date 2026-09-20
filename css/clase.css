@@ -870,3 +870,178 @@ kbd {
     }
     .avance-clase { margin-bottom: 16px; }
 }
+
+
+/* ==========================================================================
+   ANGULAR
+   Todo lo de la clase de Angular vive acá, bajo el prefijo .ng- (y los
+   colores c-* nuevos). Nada de lo de arriba se modifica: si se borra este
+   bloque, las clases de Express quedan exactamente como estaban.
+
+   Reutiliza la grilla .tablero, el índice, la teoría, el editor y la consola
+   de Express. Lo único propio es el taller: el editor comparte la fila con la
+   VISTA PREVIA (a la derecha, sobre fondo claro, como el "Preview" de
+   angular.dev), y abajo van la Consola y el Terminal.
+   ========================================================================== */
+
+/* ---------------------------- colores nuevos del resaltador ---------------------------- */
+.c-etiqueta      { color: #569cd6; }
+.c-atributo      { color: #9cdcfe; }
+.c-angular       { color: #c586c0; }          /* [x]  (x)  *ngIf  #ref  → lo propio de Angular */
+.c-angular-valor { color: #d7ba7d; }
+.c-interp        { color: #4ec9b0; font-weight: 600; }
+.c-tipo          { color: #4ec9b0; }
+.c-decorador     { color: #dcdcaa; }
+
+/* ---------------------------- editor ----------------------------
+   Las reglas del editor de Express están atadas al id #editor, así que el
+   textarea de Angular (#ng-editor) no las recibe: quedaba como un cuadro chico
+   y sólo se podía escribir adentro de él. Se repiten acá para #ng-editor.
+   Tienen que ser idénticas a las de arriba: el <pre> pintado, el <textarea>
+   transparente y la regleta comparten tipografía e interlineado, y si una se
+   despega el cursor deja de caer donde corresponde. */
+#ng-editor {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    tab-size: 2;
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 10px 14px;
+    border: 0;
+    white-space: pre;
+    overflow: auto;
+    word-wrap: normal;
+    background: transparent;
+    color: transparent;
+    caret-color: #fff;
+    resize: none;
+    outline: none;
+}
+#ng-editor::selection { background: rgba(61, 133, 198, 0.40); }
+
+/* ---------------------------- pantalla ---------------------------- */
+#vista-angular[hidden] { display: none; }
+
+.ng-tablero {
+    display: grid;
+    grid-template-columns: 205px minmax(340px, 0.95fr) minmax(560px, 1.6fr);
+    height: calc(100vh - var(--alto-cabecera));
+    overflow: hidden;
+}
+
+/* ---------------------------- taller: editor | vista previa / consola ---------------------------- */
+.ng-taller {
+    display: grid;
+    grid-template-rows: minmax(0, 1.45fr) minmax(0, 1fr);
+    background: var(--editor-fondo);
+    overflow: hidden;
+    min-width: 0;
+}
+
+.ng-fila-superior {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    min-height: 0;
+    min-width: 0;
+}
+
+/* el editor es el de Express: sólo se le da su propio contenedor */
+.ng-fila-superior .editor-caja { border-right: 1px solid var(--editor-borde); min-width: 0; }
+
+/* ---------------------------- vista previa ---------------------------- */
+.ng-vista {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    background: var(--editor-fondo);
+}
+
+.ng-vista-barra {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px 0 14px;
+    background: var(--editor-panel);
+    border-bottom: 1px solid var(--editor-borde);
+    flex: 0 0 auto;
+    height: 33px;
+}
+.ng-vista-barra .titulo {
+    color: #ddd; font-family: var(--ui); font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.03em; text-transform: uppercase; flex: 1;
+}
+.ng-vista-barra .estado {
+    font-family: var(--ui); font-size: 0.72rem; color: #7a8894;
+}
+.ng-vista-barra .estado.trabajando { color: #e5c07b; }
+.ng-vista-barra .estado.bien { color: #6bbf59; }
+.ng-vista-barra .estado.mal { color: #f48771; }
+
+.ng-icono {
+    background: transparent; border: 1px solid transparent; color: #9a9a9a;
+    width: 26px; height: 24px; border-radius: 4px; cursor: pointer;
+    font-size: 0.95rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+}
+.ng-icono:hover { color: #fff; background: #3a3a3c; }
+
+/* la pantalla donde vive el iframe: fondo blanco, como un navegador */
+.ng-vista-pantalla { flex: 1; min-height: 0; background: #fff; position: relative; }
+.marco-vista { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
+
+/* velo que aparece mientras Angular arranca o cuando algo se rompe */
+.ng-vista-velo {
+    position: absolute; inset: 0; background: rgba(255,255,255,0.92);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 20px; text-align: center; z-index: 2;
+    font-family: var(--ui); color: var(--tinta);
+}
+.ng-vista-velo[hidden] { display: none; }
+.ng-vista-velo strong { font-size: 0.98rem; }
+.ng-vista-velo p { margin: 0; font-size: 0.85rem; color: var(--tinta-suave); max-width: 340px; line-height: 1.45; }
+.ng-vista-velo.error strong { color: var(--rojo); }
+
+.ng-barra-carga { width: 150px; height: 4px; background: #e4e7ec; border-radius: 3px; overflow: hidden; }
+.ng-barra-carga > i {
+    display: block; height: 100%; width: 40%; background: var(--azul); border-radius: 3px;
+    animation: ng-carga 1.1s ease-in-out infinite;
+}
+@keyframes ng-carga { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+
+/* ---------------------------- panel inferior: consola ---------------------------- */
+.ng-taller .panel-inferior { min-width: 0; }
+
+.ng-consola-cuerpo {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 8px 12px;
+    font-family: var(--mono); font-size: 0.79rem; line-height: 1.5;
+}
+.ng-consola-vacia { color: #7a8894; font-family: var(--ui); font-size: 0.82rem; padding: 12px 14px; }
+.ng-consola-cuerpo .linea-consola .codigo-ng { color: #c586c0; font-weight: 700; }
+
+.ng-solapa-contador {
+    display: inline-block; min-width: 16px; padding: 0 5px; margin-left: 6px;
+    border-radius: 8px; background: #cc0000; color: #fff; font-size: 0.66rem;
+    line-height: 16px; text-align: center; vertical-align: 1px;
+}
+.ng-solapa-contador[hidden] { display: none; }
+
+/* ---------------------------- teoría: ajustes que sólo aplican acá ---------------------------- */
+.ng-tablero .bloque-codigo .nombre-bloque { font-family: var(--mono); }
+.ng-tablero .resultado .error-angular {
+    margin: 8px 0 0; padding: 8px 10px; background: #1e1e1e; color: #f48771;
+    border-radius: 4px; font-family: var(--mono); font-size: 0.76rem;
+    white-space: pre-wrap; word-break: break-word; max-height: 130px; overflow: auto;
+}
+
+/* ---------------------------- pantallas angostas ---------------------------- */
+@media (max-width: 1400px) {
+    .ng-tablero { grid-template-columns: 190px minmax(320px, 0.9fr) minmax(500px, 1.5fr); }
+}
+@media (max-width: 1150px) {
+    .ng-tablero { grid-template-columns: minmax(0, 1fr); height: auto; overflow: visible; }
+    .ng-taller { grid-template-rows: none; min-height: 90vh; }
+    .ng-fila-superior { grid-template-columns: minmax(0, 1fr); grid-template-rows: 340px 320px; }
+    .ng-tablero .columna-indice { display: none; }
+}

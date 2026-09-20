@@ -8,6 +8,10 @@
  *
  * Todo lo demás (editor, consola, panel de pedidos, verificador, panel de
  * inicio) es común y no se toca.
+ *
+ * Excepción: las clases con `tipo: 'angular'` no usan ni motor ni terminal.
+ * Tienen su propia pantalla (#vista-angular) y su propio controlador
+ * (js/angular/controlador.js). Sólo comparten con Express el panel de inicio.
  * ========================================================================== */
 
 /* Lo llenan los archivos de contenido/: CONTENIDO.inicial, CONTENIDO.avanzada. */
@@ -52,5 +56,15 @@ const CLASES = [
         conCabeceras: true,
         ejemploArchivo: 'routes/tareas.js',
         reinicioConBase: true
+    },
+    {
+        id: 'angular',
+        nivel: 'Inicial',
+        titulo: 'Fundamentos de Angular',
+        subtitulo: 'Componentes, bindings, directivas y comunicación entre componentes',
+
+        clave: 'clase_angular_v1',
+        motor: 'angular',                     // no usa js/motor/: corre Angular real (vista-angular.html)
+        tipo: 'angular'                       // main.js elige la pantalla con este campo
     }
 ];

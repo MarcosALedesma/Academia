@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Programación IV · Express</title>
+<title>Programación IV</title>
 <link rel="stylesheet" href="css/clase.css">
 </head>
-      <link rel="icon" href="img/logo.png" type="image/x-icon">
+  <link rel="icon" href="img/logo.png" type="image/x-icon">
+
 <body>
 
 <!-- ============================ PANEL DE INICIO ============================ -->
@@ -15,7 +16,7 @@
         <img src="img/logo-utn.png" alt="UTN" class="logo">
         <div class="titulo-clase">
             <h1>Programación IV</h1>
-            <p>Express: de un servidor mínimo a una API con login</p>
+            <p>Angular y Express: del front al back</p>
         </div>
     </header>
     <main class="contenido-panel">
@@ -165,12 +166,115 @@
 
 </div>
 
+
+<!-- ============================ UNA CLASE DE ANGULAR ============================
+     Reutiliza los ids del índice, la teoría, la consigna y el resultado de la
+     clase de Express, así el mismo CSS y la misma lógica de estilo aplican. Sólo
+     el taller es propio: editor + vista previa arriba, consola abajo. -->
+<div id="vista-angular" hidden>
+
+<header class="cabecera">
+    <img src="img/logo-utn.png" alt="UTN" class="logo">
+    <a class="boton fantasma" href="#/" title="Volver a la lista de clases">&larr; Clases</a>
+    <div class="titulo-clase">
+        <h1 id="ng-titulo-de-clase"></h1>
+        <p id="ng-subtitulo-de-clase"></p>
+    </div>
+    <div class="progreso">
+        <div class="progreso-fondo"><div class="progreso-barra" id="ng-progreso-barra"></div></div>
+        <span id="ng-progreso-texto">0 de 10</span>
+    </div>
+    <button class="boton fantasma" id="ng-boton-reiniciar" title="Borrar todo y empezar de cero">Reiniciar</button>
+</header>
+
+<main class="ng-tablero">
+
+    <nav class="columna-indice">
+        <div id="ng-indice-pasos"></div>
+    </nav>
+
+    <section class="columna-teoria" id="ng-columna-teoria">
+        <div class="encabezado-paso">
+            <span class="numero-actual" id="ng-numero-actual">1.</span>
+            <h2 id="ng-titulo-actual"></h2>
+            <span class="minutos" id="ng-minutos-actual">~10 min</span>
+        </div>
+
+        <article class="teoria" id="ng-teoria"></article>
+
+        <section class="bloque-consigna">
+            <h3 class="titulo-consigna">Tu turno</h3>
+            <div id="ng-consigna"></div>
+            <div class="acciones">
+                <button class="boton primario" id="ng-boton-verificar">Verificar</button>
+                <button class="boton fantasma" id="ng-boton-solucion">Ver la solución</button>
+            </div>
+            <div class="resultado" id="ng-resultado" hidden></div>
+        </section>
+
+        <div class="navegacion-pasos">
+            <button class="boton fantasma" id="ng-anterior">&larr; Anterior</button>
+            <button class="boton fantasma" id="ng-siguiente">Siguiente &rarr;</button>
+        </div>
+    </section>
+
+    <!-- ============================ TALLER ============================ -->
+    <section class="ng-taller">
+
+        <div class="ng-fila-superior">
+            <div class="editor-caja">
+                <div class="solapas-archivos" id="ng-solapas-archivos"></div>
+                <div class="area-editor">
+                    <pre class="regleta" id="ng-regleta">1
+</pre>
+                    <div class="envoltorio-editor">
+                        <pre class="pintado" id="ng-pintado" aria-hidden="true"></pre>
+                        <textarea id="ng-editor" spellcheck="false" autocomplete="off"
+                                  autocapitalize="off" autocorrect="off" wrap="off"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ng-vista">
+                <div class="ng-vista-barra">
+                    <span class="titulo">Vista previa</span>
+                    <span class="estado" id="ng-estado-vista"></span>
+                    <button class="ng-icono" id="ng-recargar" title="Volver a ejecutar">&#8635;</button>
+                </div>
+                <div class="ng-vista-pantalla" id="ng-pantalla-caja">
+                    <div id="ng-pantalla"></div>
+                    <div class="ng-vista-velo" id="ng-velo"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-inferior ng-panel-inferior">
+            <div class="solapas-panel" id="ng-solapas-panel">
+                <button data-panel="consola" class="solapa activa">Consola<span class="ng-solapa-contador" id="ng-contador-errores" hidden>0</span></button>
+                <span style="flex:1"></span>
+                <button class="ng-icono" id="ng-limpiar-consola" title="Limpiar la consola" style="margin:3px 6px">&#8856;</button>
+            </div>
+            <div class="panel" id="ng-panel-consola">
+                <div class="ng-consola-cuerpo" id="ng-consola-cuerpo"></div>
+            </div>
+        </div>
+    </section>
+</main>
+
+</div>
+
 <script src="js/clases.js"></script>
 <script src="contenido/inicial.js"></script>
 <script src="contenido/avanzada.js"></script>
+<script charset="utf-8" src="contenido/angular-inicial.js"></script>
+<script charset="utf-8" src="contenido/angular-comunicacion.js"></script>
 <script src="js/runner.js"></script>
 <script src="js/terminal.js"></script>
 <script src="js/app.js"></script>
+<script charset="utf-8" src="js/angular/resaltador.js"></script>
+<script charset="utf-8" src="js/angular/vista.js"></script>
+<script charset="utf-8" src="js/angular/verificador.js"></script>
+<script charset="utf-8" src="js/angular/controlador.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
