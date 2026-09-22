@@ -3,31 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Vista previa</title>
-<!-- ============================================================================
-     vista-angular.html — La pantalla de vista previa de las clases de Angular.
-
-     Esta página vive DENTRO de un <iframe sandbox="allow-scripts"> (ver
-     js/angular/vista.js). Sin "allow-same-origin" el navegador la trata como
-     de origen opaco: el código del alumno no puede leer el localStorage donde
-     se guarda su avance, ni tocar la página de afuera.
-
-     Es el equivalente, para Angular, de js/motor-worker.js en las clases de
-     Express. Con una diferencia de fondo: Express se puede simular en un Worker
-     porque no necesita pantalla. Angular sí necesita un DOM de verdad, así que
-     acá corre Angular 18 REAL, compilado en el navegador (JIT), y no una
-     imitación.
-
-     Protocolo (postMessage, siempre con el padre):
-       padre -> vista   { tipo: 'ejecutar', id, archivos, entrada }
-       padre -> vista   { tipo: 'inspeccionar', id, consulta }
-       vista -> padre   { tipo: 'listo' }
-       vista -> padre   { tipo: 'resultado', id, ...resultado }
-       vista -> padre   { tipo: 'respuesta', id, ...datos }
-       vista -> padre   { tipo: 'consola', nivel, texto }
-     ========================================================================= -->
 <style>
-    /* Lo que el alumno ve es SU aplicación: fondo blanco y tipografía de
-       navegador, como en angular.dev/tutorials. Nada de estilos nuestros. */
     html, body { margin: 0; padding: 0; background: #fff; }
     body { padding: 12px 14px; font-family: system-ui, 'Segoe UI', sans-serif; color: #212121; }
     #__aviso {
@@ -41,10 +17,29 @@
 <app-root></app-root>
 
 <script src="vendor/ts-runtime.js?v=ts5.5.4"></script>
-<script src="vendor/angular-runtime.js?v=ng18.2.14"></script>
+<script src="vendor/angular-runtime.js?v=ng18.2.14-http"></script>
+<script src="js/angular/api-simulada.js?v=1"></script>
 <script>
 (function () {
     'use strict';
+
+    (function () {
+        var R = window.Reflect;
+        if (!R || typeof R.getOwnMetadata === 'function') return;
+        var almacen = new WeakMap();
+        function clave(k, p) { return String(k) + '|' + (p === undefined ? '' : String(p)); }
+        function tabla(o, crear) {
+            var t = almacen.get(o);
+            if (!t && crear) { t = {}; almacen.set(o, t); }
+            return t;
+        }
+        R.defineMetadata = function (k, v, o, p) { tabla(o, true)[clave(k, p)] = v; };
+        R.metadata = function (k, v) { return function (o, p) { R.defineMetadata(k, v, o, p); }; };
+        R.getOwnMetadata = function (k, o, p) { var t = tabla(o, false); return t ? t[clave(k, p)] : undefined; };
+        R.hasOwnMetadata = function (k, o, p) { var t = tabla(o, false); return !!t && (clave(k, p) in t); };
+        R.getMetadata = R.getOwnMetadata;
+        R.hasMetadata = R.hasOwnMetadata;
+    })();
 
     var A = window.__ANGULAR__;
     var T = window.__TS__;
@@ -52,12 +47,12 @@
     function avisarPadre(msg) { parent.postMessage(msg, '*'); }
 
     /* ------------------------------------------------------------------------
-     * Errores: todo lo que Angular protesta llega por console.error, no por una
-     * excepción. Se captura y se manda al padre, que lo muestra en la consola
-     * de la clase con una pista en criollo. No se traga nada: se reenvía.
+     * Errores: todo lo que Angular protesta llega por console.error
      * ---------------------------------------------------------------------- */
 
     var errores = [];
+    var registro = [];
+    var backend = ApiSimulada.crearBackend(A);
 
     function texto(args) {
         return Array.prototype.map.call(args, function (a) {
@@ -67,18 +62,13 @@
         }).join(' ');
     }
 
-    /* Ruido que Angular emite por el modo en que corre la clase, no por un error
-       del alumno: el aviso de modo desarrollo, y el NG0912 que salta porque cada
-       "Ejecutar" vuelve a definir AppComponent en la misma página. Los dos son
-       inofensivos y taparían los errores de verdad. Se filtran por código, no
-       por nivel: cualquier otro warning o error pasa igual. */
     var RUIDO = [/^Angular is running in development mode/, /^NG0912:/];
 
     ['log', 'info', 'warn', 'error'].forEach(function (nivel) {
         console[nivel] = function () {
             var t = texto(arguments);
             if (RUIDO.some(function (re) { return re.test(t); })) return;
-            if (nivel === 'error') errores.push(t);
+            if (nivel === 'error') errores.push(t); else registro.push(t);
             avisarPadre({ tipo: 'consola', nivel: nivel === 'info' ? 'log' : nivel, texto: t });
         };
     });
@@ -96,24 +86,22 @@
     });
 
     /* ------------------------------------------------------------------------
-     * Módulos que el alumno puede importar. Si escribe otro, el error es el de
-     * un import que no se resuelve, igual que en un proyecto de verdad.
+     * Módulos que el alumno puede importar
      * ---------------------------------------------------------------------- */
 
     var MODULOS = {
         '@angular/core': A.core,
         '@angular/common': A.common,
         '@angular/forms': A.forms,
+        '@angular/common/http': A.http,
+        '@angular/router': A.router,
         '@angular/platform-browser': A.platformBrowser,
         'rxjs': A.rxjs,
         'rxjs/operators': A.rxjsOps
     };
 
     /* ------------------------------------------------------------------------
-     * Compilar: TypeScript real -> JavaScript. transpileModule NO chequea tipos
-     * (eso lo haría un compilador completo), sólo borra los tipos y expande los
-     * decoradores. Está dicho en la teoría: el editor de verdad te avisa de los
-     * tipos; acá lo que se nota es lo que rompe al ejecutar.
+     * Compilar
      * ---------------------------------------------------------------------- */
 
     var nombreActual = '';
@@ -128,11 +116,8 @@
                 target: T.ScriptTarget.ES2022,
                 experimentalDecorators: true,
                 useDefineForClassFields: false,
-                /* Sin esto TypeScript borra los imports que no se usan como
-                   valor, y un import mal escrito nunca llegaría a fallar. Con
-                   esto se conservan todos: una ruta mal escrita rompe de verdad,
-                   y una interface (que compila a un módulo vacío) no molesta. */
-                verbatimModuleSyntax: true
+                verbatimModuleSyntax: true,
+                emitDecoratorMetadata: true
             }
         });
         var graves = (r.diagnostics || []).filter(function (d) { return d.category === 1; });
@@ -154,9 +139,7 @@
     }
 
     /* ------------------------------------------------------------------------
-     * Un mini require de archivos del alumno: './saludo/saludo.component' ->
-     * el archivo saludo/saludo.component.ts del proyecto. Cada archivo se
-     * compila y se ejecuta una sola vez.
+     * Un mini require de archivos del alumno
      * ---------------------------------------------------------------------- */
 
     function normalizar(desde, pedido) {
@@ -176,12 +159,32 @@
         return null;
     }
 
+    function incrustar(archivos, desde, fuente) {
+        function leer(ruta) {
+            var destino = normalizar(desde, ruta);
+            if (!Object.prototype.hasOwnProperty.call(archivos, destino)) {
+                var e = new Error("No se encuentra el archivo '" + ruta + "' que pide " + desde + '.');
+                e.name = 'ModuleNotFound';
+                e.archivo = desde;
+                throw e;
+            }
+            return archivos[destino];
+        }
+        return fuente
+            .replace(/templateUrl\s*:\s*(['"])([^'"]+)\1/g, function (todo, q, ruta) { return 'template: ' + JSON.stringify(leer(ruta)); })
+            .replace(/styleUrl\s*:\s*(['"])([^'"]+)\1/g, function (todo, q, ruta) { return 'styles: ' + JSON.stringify(leer(ruta)); })
+            .replace(/styleUrls\s*:\s*\[([^\]]*)\]/g, function (todo, lista) {
+                var rutas = lista.match(/['"][^'"]+['"]/g) || [];
+                return 'styles: [' + rutas.map(function (r) { return JSON.stringify(leer(r.slice(1, -1))); }).join(', ') + ']';
+            });
+    }
+
     function cargar(archivos, cache, nombre) {
         if (cache[nombre]) return cache[nombre].exports;
         var modulo = { exports: {} };
         cache[nombre] = modulo;
 
-        var js = compilar(nombre, archivos[nombre]);
+        var js = compilar(nombre, incrustar(archivos, nombre, archivos[nombre]));
         function pedir(que) {
             if (que.charAt(0) === '.') {
                 var destino = resolverArchivo(archivos, normalizar(nombre, que));
@@ -195,7 +198,7 @@
             }
             if (MODULOS[que]) return MODULOS[que];
             var e2 = new Error("No se encuentra el módulo '" + que + "'. En esta clase se puede importar " +
-                               "desde @angular/core, @angular/common, @angular/forms, rxjs y tus propios archivos.");
+                               "desde @angular/core, @angular/common, @angular/forms, @angular/common/http, rxjs y tus propios archivos.");
             e2.name = 'ModuleNotFound';
             e2.archivo = nombre;
             throw e2;
@@ -205,33 +208,30 @@
     }
 
     /* ------------------------------------------------------------------------
-     * Ejecutar: destruye la aplicación anterior, limpia el DOM y arranca de
-     * cero. Devuelve SIEMPRE un objeto; nunca lanza.
+     * Ejecutar
      * ---------------------------------------------------------------------- */
 
     var appRef = null;
 
     function destruir() {
-        try { if (appRef) appRef.destroy(); } catch (e) { /* ya estaba rota */ }
+        try { if (appRef) appRef.destroy(); } catch (e) { }
         appRef = null;
-        /* Angular guarda UNA plataforma por página, y bootstrapApplication (standalone)
-           y platformBrowserDynamic (módulos) crean plataformas con configuración
-           distinta. Sin destruirla, pasar de un estilo al otro falla con NG0400. */
         try {
             var plataforma = A.core.getPlatform();
             if (plataforma) plataforma.destroy();
-        } catch (e) { /* no había plataforma */ }
+        } catch (e) { }
         var raiz = document.querySelector('app-root');
         if (raiz) { raiz.parentNode.removeChild(raiz); }
         var nueva = document.createElement('app-root');
         document.body.appendChild(nueva);
-        /* Los estilos de componente que Angular inyectó en <head> */
         Array.prototype.slice.call(document.head.querySelectorAll('style[ng-app-id], style[ng-version]'))
             .forEach(function (s) { s.parentNode.removeChild(s); });
     }
 
     function ejecutar(orden) {
         errores = [];
+        registro = [];
+        backend.reiniciarPedidos();
         destruir();
         document.getElementById('__aviso').style.display = 'none';
 
@@ -246,19 +246,17 @@
             });
         }
 
-        /* Dos estilos, los dos reales y los dos vigentes en Angular 18:
-             - con módulos:  existe app/app.module.ts con AppModule y declarations
-                             (lo que enseña el apunte, ng new --standalone=false)
-             - standalone:   no hay módulo; el componente se declara a sí mismo
-                             (el valor por defecto desde Angular 17)
-           Se elige mirando qué archivos hay, como haría el proyecto de verdad. */
         var archivoModulo = 'app/app.module.ts';
         var conModulos = Object.prototype.hasOwnProperty.call(archivos, archivoModulo);
 
         var exportado, exportadoModulo = null;
+        var cache = {};
+        var archivoConfig = 'app/app.config.ts';
+        var exportadoConfig = null;
         try {
-            exportado = cargar(archivos, {}, entrada);
-            if (conModulos) exportadoModulo = cargar(archivos, {}, archivoModulo);
+            exportado = cargar(archivos, cache, entrada);
+            if (conModulos) exportadoModulo = cargar(archivos, cache, archivoModulo);
+            if (!conModulos && Object.prototype.hasOwnProperty.call(archivos, archivoConfig)) exportadoConfig = cargar(archivos, cache, archivoConfig);
         } catch (e) {
             return Promise.resolve({
                 ok: false, fase: 'codigo',
@@ -285,13 +283,14 @@
 
         var arranque = conModulos
             ? A.platformBrowserDynamic().bootstrapModule(exportadoModulo.AppModule)
-            : A.platformBrowser.bootstrapApplication(Raiz);
+            : A.platformBrowser.bootstrapApplication(Raiz, {
+                providers: ((exportadoConfig && exportadoConfig.appConfig && exportadoConfig.appConfig.providers) || [])
+                    .concat([{ provide: A.http.HttpBackend, useValue: backend }])
+            });
 
         return arranque
             .then(function (ref) {
                 appRef = ref;
-                /* Dos vueltas al event loop: deja que Angular termine el primer
-                   ciclo de detección de cambios antes de contestar. */
                 return new Promise(function (ok) { setTimeout(ok, 60); });
             })
             .then(function () {
@@ -308,17 +307,7 @@
     }
 
     /* ------------------------------------------------------------------------
-     * Inspección: preguntas sobre el DOM real que el verificador de la clase
-     * hace DESPUÉS de ejecutar. Son datos puros ida y vuelta.
-     *
-     *   { contar: 'selector' }              -> { cantidad }
-     *   { textos: 'selector' }              -> { textos: [...] }
-     *   { atributo: ['selector', 'attr'] }  -> { valor }
-     *   { tiene: 'selector' }               -> { existe }
-     *   { clic: 'selector' }                -> hace click y devuelve { hecho }
-     *   { escribir: ['selector', 'texto'] } -> escribe en un input y dispara input
-     *   { propiedad: ['selector', 'prop'] } -> { valor } (propiedad del elemento, no atributo)
-     *   { enfocado: 'selector' }            -> { existe, enfocado } (¿tiene el foco del teclado?)
+     * Inspección
      * ---------------------------------------------------------------------- */
 
     function espera() { return new Promise(function (ok) { setTimeout(ok, 50); }); }
@@ -345,6 +334,16 @@
                 var el2 = document.querySelector(consulta.propiedad[0]);
                 return Promise.resolve({ existe: !!el2, valor: el2 ? el2[consulta.propiedad[1]] : null });
             }
+            if (consulta.pedidos !== undefined) {
+                return Promise.resolve({ pedidos: backend.estado.pedidos.slice() });
+            }
+            if (consulta.red !== undefined) {
+                backend.estado.red = consulta.red;
+                return Promise.resolve({ hecho: true });
+            }
+            if (consulta.registro !== undefined) {
+                return Promise.resolve({ registro: registro.slice() });
+            }
             if (consulta.enfocado !== undefined) {
                 var foc = document.querySelector(consulta.enfocado);
                 return Promise.resolve({ existe: !!foc, enfocado: !!foc && document.activeElement === foc });
@@ -353,6 +352,13 @@
                 var b = document.querySelector(consulta.clic);
                 if (!b) return Promise.resolve({ hecho: false });
                 b.click();
+                return espera().then(function () { return { hecho: true }; });
+            }
+            if (consulta.elegir) {
+                var sel = document.querySelector(consulta.elegir[0]);
+                if (!sel) return Promise.resolve({ hecho: false });
+                sel.value = consulta.elegir[1];
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
                 return espera().then(function () { return { hecho: true }; });
             }
             if (consulta.escribir) {
@@ -367,8 +373,6 @@
             return Promise.resolve({ error: String(e && e.message) });
         }
     }
-
-    /* ------------------------------------------------------------------------ */
 
     window.addEventListener('message', function (evento) {
         var d = evento.data || {};

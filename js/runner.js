@@ -1,24 +1,10 @@
-/* ============================================================================
- * runner.js — Lo único que la interfaz sabe del motor.
- *
- * Contrato: NINGUNA de estas funciones lanza. Todo error del alumno vuelve
- * adentro del objeto resultado. Un throw acá sería un botón que no hace nada.
- *
- * El watchdog: si el worker no contesta en LIMITE_MS, se lo mata y se vuelve a
- * crear. Para el alumno eso es "se me colgó el servidor", que es la traducción
- * correcta de lo que le pasó.
- * ========================================================================== */
-
 const LIMITE_MS = 4000;
-/* Un solo worker para las dos clases; el motor (inicial o avanzada) se elige por parámetro. */
 function rutaWorker() { return 'js/motor-worker.js?motor=' + encodeURIComponent(CLASE_ACTUAL.motor); }
 
 let trabajador = null;
 let contador = 0;
 const pendientes = new Map();
 
-/* Espejo en el hilo principal de lo que el worker tiene cargado. Si hay que
-   recrearlo por un cuelgue, se le vuelve a mandar sin molestar a nadie. */
 let entorno = { archivos: {}, instalados: {} };
 
 function obtenerTrabajador() {
@@ -73,7 +59,6 @@ function enviar(orden) {
  * API pública
  * ------------------------------------------------------------------------ */
 
-/** Sincroniza el proyecto y los paquetes instalados con el worker. */
 function sincronizar(archivos, instalados) {
     entorno = { archivos: archivos, instalados: instalados };
     return enviar({ comando: 'entorno', archivos: archivos, instalados: instalados });

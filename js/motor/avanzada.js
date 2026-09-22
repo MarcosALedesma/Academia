@@ -1,42 +1,17 @@
-/* ============================================================================
- * motor.js — Express, de mentira pero en serio. Ahora con base de datos.
- *
- * Es el mismo motor de clase-express/js/motor.js (léase su cabecera: la
- * decisión de fondo no cambió) con una vuelta de tuerca: acá el "Node" del
- * alumno también tiene bcrypt, jsonwebtoken, dotenv y un Sequelize de juguete.
- * Todo lo que se agrega respeta la misma regla de siempre: el alumno escribe
- * la sintaxis REAL de esos paquetes, y lo que cambia es quién la ejecuta.
- *
- * LA DIFERENCIA GRANDE CON clase-express: ahí el motor era 100 % sincrónico.
- * Acá no puede serlo — conectar a una base, hashear con bcrypt, todo eso es
- * async de verdad en cualquier proyecto real, y el alumno tiene que escribir
- * async/await para que ande. El router (__manejar/__invocar), __correr() y
- * __pedido() están rehechos para esperar promesas en vez de asumir que todo
- * termina en el mismo tick. Ver COMO-ESTA-HECHO.md, sección 4.
- *
- * LA BASE DE DATOS SOBREVIVE A UN REINICIO DEL SERVIDOR. A propósito: es
- * justamente la diferencia con el arreglo en memoria de la clase anterior, y
- * es la razón de ser de esta clase. `__proceso.baseDeDatos` vive fuera del
- * ciclo de vida de `node app.js` / Ctrl+C (que sólo limpia la caché de
- * require, como Node de verdad). Sólo se vacía cuando el alumno hace
- * `sequelize.sync({ force: true })` en su propio código, o cuando aprieta
- * Verificar (ver la sección del verificador, más abajo).
- * ========================================================================== */
-
 /* --------------------------------------------------------------------------
  * Estado del "proceso"
  * ------------------------------------------------------------------------ */
 
 const __proceso = {
-    archivos: {},        // nombre -> contenido (el proyecto del alumno)
-    modulos: {},         // caché de require, igual que la de Node
-    consola: [],         // lo que imprimió console.log desde el último corte
-    app: null,           // la app de Express que quedó escuchando
+    archivos: {},
+    modulos: {},
+    consola: [],
+    app: null,
     puerto: null,
     escuchando: false,
-    instalados: {},      // lo que "instaló" npm
-    corriendo: false,    // ¿hay un node app.js vivo?
-    baseDeDatos: {}       // nombreDeModelo -> { filas: [...], siguienteId }. SOBREVIVE reinicios.
+    instalados: {},
+    corriendo: false,
+    baseDeDatos: {}
 };
 
 function __registrar(nivel, args) {
@@ -64,14 +39,9 @@ const __consola = {
     table: function () { __registrar('log', [].slice.call(arguments)); }
 };
 
-/* --------------------------------------------------------------------------
- * Un pequeño "reloj": convierte cualquier operación en una Promise que se
- * resuelve unos milisegundos después. No es que haga falta tecnológicamente
- * —no hay red de verdad—, pero es lo que hace que "si te olvidás el await
- * pasa algo raro" sea DEMOSTRABLE en vez de un cuento. bcrypt, jwt* y las
- * consultas al modelo lo usan. (*jsonwebtoken en realidad es sincrónico sin
- * callback — por eso jwt.sign/verify NO pasan por acá, ver más abajo.)
- * ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------
+ * Un pequeño "reloj"
+ * ---------------------------------------------------------------------- */
 
 function __asincrono(fn, ms) {
     return new Promise(function (resolver, rechazar) {
@@ -88,11 +58,9 @@ function __cadenaAleatoria(n) {
     return s;
 }
 
-/* --------------------------------------------------------------------------
- * Ruteo: '/api/tareas/:id'  ->  expresión regular + nombres de parámetros
- * Igual que en clase-express: alcanza con segmentos literales, :parámetros
- * y el '*' de cierre.
- * ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------
+ * Ruteo: '/api/tareas/:id'
+ * ---------------------------------------------------------------------- */
 
 function __compilarRuta(patron) {
     const nombres = [];
@@ -279,15 +247,9 @@ function __crearRes() {
     return res;
 }
 
-/* --------------------------------------------------------------------------
- * El router: una pila de capas que se recorre en orden con next().
- *
- * NOVEDAD respecto de clase-express: un manejador puede ser `async`. Si la
- * función devuelve algo con `.then`, y esa promesa se rechaza sin que el
- * alumno la haya atajado, __invocar la manda sola a next(error) — es el
- * comportamiento de Express 5. En Express 4 clásico esto NO es automático y
- * hay que hacer try/catch a mano; se los cuenta la teoría del paso del guard.
- * ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------
+ * El router
+ * ---------------------------------------------------------------------- */
 
 const __METODOS = ['get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'all'];
 
@@ -351,7 +313,6 @@ function __crearRouter() {
         return router;
     };
 
-    /** Recorre las capas. `salir` es el next() del router de más afuera. */
     router.__manejar = function (req, res, salir) {
         let i = 0;
         const caminoOriginal = req.__camino;
@@ -399,7 +360,6 @@ function __crearRouter() {
     return router;
 }
 
-/** Llama a la capa. Si devuelve una promesa que se rechaza sin atajar, la manda a next(). */
 function __invocar(capa, error, req, res, siguiente) {
     let resultado;
     try {
@@ -509,24 +469,17 @@ function __crearExpress() {
     return express;
 }
 
-/* --------------------------------------------------------------------------
- * bcrypt — hash unidireccional. No es criptografía de verdad (no hace falta:
- * nadie va a intentar romperlo), pero el CONTRATO es el real: hash() y
- * compare() son async y devuelven Promise; con la misma contraseña, dos
- * hash() dan resultados DISTINTOS (por la sal); compare() es la única forma
- * de verificar, porque el hash no se puede "deshacer".
- * ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------
+ * bcrypt — hash unidireccional
+ * ---------------------------------------------------------------------- */
 
 function __crearBcrypt() {
-    const LARGO_SAL = 7 + 22;   // '$2b$10$' (7) + 22 caracteres al azar
+    const LARGO_SAL = 7 + 22;
 
     function sal(rondas) {
         return '$2b$' + String(rondas || 10).padStart(2, '0') + '$' + __cadenaAleatoria(22);
     }
 
-    /* Ni remotamente bcrypt de verdad: una mezcla determinística de la sal y
-       el texto. Alcanza para el contrato (mismo texto + misma sal = mismo
-       resultado; no se puede volver de acá para atrás a la contraseña). */
     function mezclar(sal, texto) {
         let h1 = 0, h2 = 0;
         const cadena = sal + '::' + texto;
@@ -567,12 +520,9 @@ function __crearBcrypt() {
     return bcrypt;
 }
 
-/* --------------------------------------------------------------------------
- * jsonwebtoken — OJO: a diferencia de bcrypt, sign()/verify() SIN callback
- * son SINCRÓNICOS en el paquete de verdad, y acá se respeta tal cual. No
- * hace falta await para usarlos (aunque no molesta si lo ponen igual, porque
- * await sobre un valor que no es una promesa simplemente lo devuelve).
- * ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------
+ * jsonwebtoken
+ * ---------------------------------------------------------------------- */
 
 function __crearJwt() {
     function base64url(texto) {
@@ -658,11 +608,9 @@ function __crearJwt() {
     return jwt;
 }
 
-/* --------------------------------------------------------------------------
- * dotenv — lee un .env "de archivo del proyecto" (no hay disco: es un
- * archivo más en __proceso.archivos) y carga process.env. Igual que el de
- * verdad: no pisa una variable que ya estaba puesta.
- * ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------
+ * dotenv — lee un .env "de archivo del proyecto" (no hay disco
+ * ---------------------------------------------------------------------- */
 
 function __crearDotenv() {
     return {
@@ -692,13 +640,9 @@ function __crearDotenv() {
     };
 }
 
-/* --------------------------------------------------------------------------
- * sequelize — un ORM de juguete. define(), sync(), y en cada modelo:
- * create/findAll/findOne/findByPk/update/destroy, todos async. Las filas
- * viven en __proceso.baseDeDatos (ver la cabecera del archivo): sobreviven
- * un `node app.js` nuevo, y sólo se vacían con sync({ force: true }) o
- * cuando el alumno aprieta Verificar.
- * ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------
+ * sequelize
+ * ---------------------------------------------------------------------- */
 
 const DataTypes = {
     STRING: 'STRING', TEXT: 'TEXT', INTEGER: 'INTEGER', FLOAT: 'FLOAT',
@@ -878,10 +822,9 @@ function __crearSequelizeModulo() {
     return { Sequelize: Sequelize, DataTypes: DataTypes };
 }
 
-/* --------------------------------------------------------------------------
- * require() y el "sistema de archivos" — igual mecánica que clase-express,
- * con cuatro paquetes nuevos además de express.
- * ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------
+ * require() y el "sistema de archivos"
+ * ---------------------------------------------------------------------- */
 
 function __normalizar(nombre, desde) {
     if (nombre.charAt(0) !== '.') return nombre;
@@ -1107,8 +1050,6 @@ function __vaciarConsola() {
     return c;
 }
 
-/** Apaga el proceso (Ctrl+C). La caché de require se limpia, la "base de
- *  datos" NO: es justamente la diferencia con un arreglo en memoria. */
 function __apagar() {
     __proceso.modulos = {};
     __proceso.app = null;
@@ -1118,10 +1059,6 @@ function __apagar() {
     __proceso.consola = [];
 }
 
-/** Espera, en pasos cortos, a que el arranque asincrónico del alumno
- *  (conectar, sincronizar, recién ahí app.listen) termine de asentarse. Si
- *  el archivo llamó a app.listen() de forma sincrónica, esto vuelve ya
- *  mismo: sólo se demora cuando hace falta. */
 function __esperarEscucha() {
     const LIMITE = 400, PASO = 10;
     let pasado = 0;
@@ -1134,8 +1071,6 @@ function __esperarEscucha() {
     });
 }
 
-/** `node app.js`. Devuelve una Promise porque el arranque puede depender de
- *  cosas asincrónicas (conectar a la base, sincronizar los modelos). */
 function __correr(entrada) {
     __apagar();
     const nombre = entrada || 'app.js';
@@ -1169,15 +1104,6 @@ function __correr(entrada) {
     });
 }
 
-/** Espera a que el pedido quede resuelto: `res` respondida, O el router llegó
- *  al final de las capas (con o sin error) y avisó por su callback de salida.
- *  Si tarda más que LIMITE, se da por colgado — el mismo diagnóstico que un
- *  pedido sincrónico que nunca llama a next() ni responde, sólo que acá hace
- *  falta un plazo real porque un manejador async legítimo también tarda unos
- *  milisegundos. Sin mirar también `estaListo()` (que se prende cuando el
- *  router terminó, incluso si nadie respondió), un next(error) async que cae
- *  en un pedido sin middleware de error se reportaría como "colgado" en vez
- *  de como el error que es. */
 function __esperarListo(res, estaListo) {
     const LIMITE = 800, PASO = 10;
     let pasado = 0;
@@ -1191,7 +1117,6 @@ function __esperarListo(res, estaListo) {
     });
 }
 
-/** Un pedido HTTP contra el servidor que quedó escuchando. */
 function __pedido(pedido) {
     if (!__proceso.escuchando || !__proceso.app) {
         return Promise.resolve({ sinServidor: true, consola: __vaciarConsola() });
@@ -1257,33 +1182,9 @@ function __pedido(pedido) {
     });
 }
 
-/* ==========================================================================
+/* ------------------------------------------------------------------------
  * EL VERIFICADOR
- *
- * Mismo vocabulario que clase-express (documentado ahí), más dos cosas
- * nuevas que hacen falta para probar rutas protegidas con JWT:
- *
- *   guardar: { token: 'token' }
- *     Después de un chequeo de pedido que salió bien, guarda el campo
- *     `token` de la respuesta (JSON) bajo el nombre `token`, para usarlo
- *     después.
- *
- *   {{token}}  dentro de `ruta`, `cabeceras` o `json`
- *     Se reemplaza por lo que se haya guardado con ese nombre. Así se puede
- *     hacer login en un chequeo y usar el token real en el siguiente:
- *
- *   { pedido: { metodo:'POST', ruta:'/api/auth/login', json:{...} },
- *     espera: { estado: 200, camposEnCadaUno: ['token'] },
- *     guardar: { token: 'token' } },
- *   { pedido: { metodo:'GET', ruta:'/api/tareas',
- *               cabeceras: { Authorization: 'Bearer {{token}}' } },
- *     espera: { estado: 200, esArreglo: true } }
- *
- * Los chequeos corren EN ORDEN sobre el MISMO servidor, arrancado limpio y
- * con la "base de datos" vacía (sync({force:true}) implícito): así un test
- * puede registrarse, loguearse y usar su propio token, sin pisarse con lo
- * que el alumno haya cargado a mano.
- * ========================================================================== */
+ * ---------------------------------------------------------------------- */
 
 function __igual(a, b) {
     if (a === b) return true;
@@ -1479,10 +1380,6 @@ async function __verificar(chequeos) {
     }
     if (chequeos.every(function (c) { return !!c.entorno; })) return { ok: true };
 
-    /* La base de datos se vacía antes de verificar: los chequeos necesitan
-       partir siempre del mismo punto. Es la misma idea que un pedido con
-       datos de prueba en CI, y ya está avisado en la interfaz que Verificar
-       reinicia el servidor con lo que el alumno tenga cargado a mano. */
     __proceso.baseDeDatos = {};
 
     const arranque = await __correr('app.js');
@@ -1601,7 +1498,7 @@ async function __verificar(chequeos) {
 
             if (c.guardar) {
                 let datoJson = null;
-                try { datoJson = JSON.parse(resp.cuerpo); } catch (e) { /* nada para guardar */ }
+                try { datoJson = JSON.parse(resp.cuerpo); } catch (e) { }
                 if (datoJson && typeof datoJson === 'object') {
                     Object.keys(c.guardar).forEach(function (nombreVar) {
                         const campo = c.guardar[nombreVar];

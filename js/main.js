@@ -1,15 +1,3 @@
-/* ============================================================================
- * main.js — Qué se muestra: el panel de inicio o una clase.
- *
- *   index.html          → panel con las clases y el avance de cada una
- *   index.html#/inicial → la clase inicial
- *   index.html#/avanzada→ la clase avanzada
- *
- * Al cambiar de ruta se recarga la página. Es lo más simple y no pierde nada:
- * el avance de cada clase ya está guardado en localStorage.
- * ========================================================================== */
-
-/* Las globales que usan app.js, runner.js y terminal.js. Se completan más abajo. */
 let CLASE_ACTUAL = null;
 let PASOS = [];
 
@@ -30,15 +18,11 @@ function escaparAtributo(texto) {
  * Panel de inicio
  * ------------------------------------------------------------------------ */
 
-/* Clase CSS del color de una tarjeta ('verde', 'violeta', 'azul'). Sólo letras:
-   el valor viene de clases.js y termina dentro de un atributo class. */
 function claseDeColor(clase) {
     const c = String(clase.color || '').replace(/[^a-z]/g, '');
     return c ? ' color-' + c : '';
 }
 
-/* Una clase que todavía no existe: se ve en el panel pero no se puede abrir.
-   No es un <a> (no hay a dónde ir) ni lee avance (no tiene clave de guardado). */
 function tarjetaEnDesarrollo(clase) {
     const el = document.createElement('div');
     el.className = 'tarjeta-clase en-desarrollo' + claseDeColor(clase);
@@ -104,9 +88,6 @@ function mostrarPanel() {
  * ------------------------------------------------------------------------ */
 
 function mostrarClaseAngular(clase) {
-    /* Las clases de Angular no tienen terminal ni servidor: van por su propia
-       pantalla y su propio controlador (js/angular/controlador.js). Lo único
-       compartido con Express es CLASE_ACTUAL/PASOS, que el controlador lee. */
     document.title = clase.titulo + ' · Programación IV';
     document.getElementById('ng-titulo-de-clase').textContent = clase.titulo;
     document.getElementById('ng-subtitulo-de-clase').textContent = clase.subtitulo;

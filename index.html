@@ -167,10 +167,7 @@
 </div>
 
 
-<!-- ============================ UNA CLASE DE ANGULAR ============================
-     Reutiliza los ids del índice, la teoría, la consigna y el resultado de la
-     clase de Express, así el mismo CSS y la misma lógica de estilo aplican. Sólo
-     el taller es propio: editor + vista previa arriba, consola abajo. -->
+<!-- ============================ UNA CLASE DE ANGULAR ============================ -->
 <div id="vista-angular" hidden>
 
 <header class="cabecera">
@@ -208,6 +205,7 @@
             <div class="acciones">
                 <button class="boton primario" id="ng-boton-verificar">Verificar</button>
                 <button class="boton fantasma" id="ng-boton-solucion">Ver la solución</button>
+                <button class="boton fantasma" id="ng-boton-reiniciar-paso">Reiniciar el paso</button>
             </div>
             <div class="resultado" id="ng-resultado" hidden></div>
         </section>
@@ -239,6 +237,7 @@
                 <div class="ng-vista-barra">
                     <span class="titulo">Vista previa</span>
                     <span class="estado" id="ng-estado-vista"></span>
+                    <label class="ng-red" id="ng-red-caja" hidden>Red <select id="ng-red"><option value="normal">Normal</option><option value="lenta">Lenta</option><option value="caida">Sin conexión</option></select></label>
                     <button class="ng-icono" id="ng-recargar" title="Volver a ejecutar">&#8635;</button>
                 </div>
                 <div class="ng-vista-pantalla" id="ng-pantalla-caja">
@@ -263,18 +262,22 @@
 
 </div>
 
-<script src="js/clases.js?v=1"></script>
-<script src="contenido/inicial.js?v=1"></script>
-<script src="contenido/avanzada.js?v=1"></script>
-<script charset="utf-8" src="contenido/angular-inicial.js?v=1"></script>
-<script charset="utf-8" src="contenido/angular-comunicacion.js?v=1"></script>
-<script src="js/runner.js?v=1"></script>
-<script src="js/terminal.js?v=1"></script>
-<script src="js/app.js?v=1"></script>
-<script charset="utf-8" src="js/angular/resaltador.js?v=1"></script>
-<script charset="utf-8" src="js/angular/vista.js?v=1"></script>
-<script charset="utf-8" src="js/angular/verificador.js?v=1"></script>
-<script charset="utf-8" src="js/angular/controlador.js?v=1"></script>
-<script src="js/main.js?v=1"></script>
+<script src="js/clases.js?v=2"></script>
+<script src="contenido/inicial.js?v=2"></script>
+<script src="contenido/avanzada.js?v=2"></script>
+<script charset="utf-8" src="contenido/angular-inicial.js?v=2"></script>
+<script charset="utf-8" src="contenido/angular-comunicacion.js?v=2"></script>
+<script charset="utf-8" src="contenido/angular-servicios.js?v=2"></script>
+<script charset="utf-8" src="contenido/angular-practica.js?v=2"></script>
+<script charset="utf-8" src="contenido/angular-ministore.js?v=2"></script>
+<script charset="utf-8" src="contenido/angular-ministore2.js?v=2"></script>
+<script src="js/runner.js?v=2"></script>
+<script src="js/terminal.js?v=2"></script>
+<script src="js/app.js?v=2"></script>
+<script charset="utf-8" src="js/angular/resaltador.js?v=2"></script>
+<script charset="utf-8" src="js/angular/vista.js?v=2"></script>
+<script charset="utf-8" src="js/angular/verificador.js?v=2"></script>
+<script charset="utf-8" src="js/angular/controlador.js?v=2"></script>
+<script src="js/main.js?v=2"></script>
 </body>
 </html>

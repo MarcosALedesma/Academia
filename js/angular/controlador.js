@@ -1,57 +1,30 @@
-/* ============================================================================
- * angular.js — La pantalla de la clase de Angular.
- *
- * Es el equivalente de app.js para Angular, con dos diferencias de fondo:
- *
- *   1. Está ENCAPSULADO. Todo vive adentro de `ClaseAngular`; no declara ninguna
- *      variable global. app.js ya usa nombres como `estado`, `editor` o
- *      `arrancar`, y comparten la misma página, así que tocar uno rompería al
- *      otro. Lo único que se toma prestado de app.js son cuatro funciones puras
- *      (escapar, marcado, dibujarBloques y la constante CONTENIDO), que no
- *      leen ni escriben nada de afuera.
- *
- *   2. En lugar de un servidor simulado y una terminal, tiene una VISTA PREVIA
- *      (vista.js) con Angular real, y una consola que muestra lo que Angular
- *      dice por dentro (errores NG0xxx, console.log del alumno).
- *
- * El proyecto del alumno es un objeto { 'ruta/archivo.ts': 'texto' }. Se guarda
- * en localStorage con el mismo formato que Express: { paso, completados,
- * archivos, activo }, así el panel de inicio calcula el avance sin saber de qué
- * clase se trata.
- * ========================================================================== */
-
 var ClaseAngular = (function () {
     'use strict';
 
-    /* Todos los ids de la pantalla de Angular llevan el prefijo "ng-", porque
-       la de Express (que está en la misma página, oculta) usa los mismos nombres
-       sin prefijo: `teoria`, `resultado`, `boton-verificar`... Pedir uno sin
-       prefijo escribiría en la pantalla equivocada SIN dar ningún error.
-       Por eso el controlador nunca llama a getElementById directamente. */
     function $(id) {
         var nodo = document.getElementById(id.indexOf('ng-') === 0 ? id : 'ng-' + id);
         if (!nodo) throw new Error('ClaseAngular: no existe el elemento ng-' + id.replace(/^ng-/, ''));
         return nodo;
     }
 
-    var DEMORA_GUARDADO = 400;      // ms sin teclear antes de guardar
-    var DEMORA_EJECUCION = 700;     // ms sin teclear antes de volver a ejecutar
+    var DEMORA_GUARDADO = 400;
+    var DEMORA_EJECUCION = 700;
 
     var estado = {
         paso: 0,
         completados: {},
         archivos: {},
         activo: null,
-        proyectoDe: null,       // id del paso al que pertenece el proyecto en pantalla
-        trabajo: {}             // { idPaso: { archivos } }: el proyecto de CADA paso
+        proyectoDe: null,
+        trabajo: {}
     };
 
     var relojGuardado = null;
     var relojEjecucion = null;
-    var ejecutando = 0;             // contador: sólo la última ejecución actualiza la pantalla
+    var ejecutando = 0;
     var erroresConsola = 0;
 
-    var el = {};                    // referencias al DOM, se llenan en arrancar()
+    var el = {};
 
     /* ------------------------------------------------------------------------
      * Guardado
@@ -60,7 +33,6 @@ var ClaseAngular = (function () {
     function guardarYa() {
         clearTimeout(relojGuardado);
         try {
-            /* El proyecto en pantalla ES el trabajo de su paso (el mismo objeto). */
             if (estado.proyectoDe) estado.trabajo[estado.proyectoDe] = estado.archivos;
             localStorage.setItem(CLASE_ACTUAL.clave, JSON.stringify({
                 paso: estado.paso,
@@ -70,7 +42,7 @@ var ClaseAngular = (function () {
                 proyectoDe: estado.proyectoDe,
                 trabajo: estado.trabajo
             }));
-        } catch (e) { /* modo privado o cuota llena: se sigue sin guardar */ }
+        } catch (e) { }
     }
 
     function guardar() {
@@ -89,10 +61,6 @@ var ClaseAngular = (function () {
             estado.completados = d.completados && typeof d.completados === 'object' ? d.completados : {};
             estado.activo = typeof d.activo === 'string' ? d.activo : null;
 
-            /* Formato nuevo: un proyecto guardado POR PASO (`trabajo`). El formato
-               viejo guardaba un solo proyecto que se arrastraba de paso en paso y
-               no se puede repartir: se descarta, se conserva el avance, y cada paso
-               arranca de su semilla. */
             var trabajo = d.trabajo && typeof d.trabajo === 'object' ? d.trabajo : null;
             estado.trabajo = trabajo || {};
             estado.proyectoDe = trabajo && typeof d.proyectoDe === 'string' ? d.proyectoDe : null;
@@ -170,18 +138,29 @@ var ClaseAngular = (function () {
         }
     }
 
-    /** Ejecuta el proyecto actual en la vista previa. Devuelve el resultado del motor. */
     function ejecutar() {
         var mio = ++ejecutando;
         estadoVista('trabajando', 'Compilando…');
 
         return VistaAngular.ejecutar(estado.archivos, 'app/app.component.ts').then(function (r) {
-            if (mio !== ejecutando) return r;                // llegó tarde: hay una más nueva en marcha
+            if (mio !== ejecutando) return r;
 
             if (r.ok) {
                 mostrarVelo(null);
                 var n = (r.errores || []).length;
                 estadoVista(n ? 'mal' : 'bien', n ? n + (n === 1 ? ' error' : ' errores') + ' en la Consola' : 'Listo');
+                if (CLASE_ACTUAL.api) {
+                    /* Los pedidos a la API simulada tardan más que los 60 ms que el motor
+                       espera antes de contestar: acá arrancó bien, pero puede fallar un
+                       instante después. Se vuelve a mirar una vez que el pedido pudo
+                       haber terminado, sin pisar una ejecución más nueva. */
+                    var propio = mio;
+                    var antes = erroresConsola;
+                    setTimeout(function () {
+                        if (propio !== ejecutando || erroresConsola === antes) return;
+                        estadoVista('mal', erroresConsola + (erroresConsola === 1 ? ' error' : ' errores') + ' en la Consola');
+                    }, 2700);
+                }
             } else {
                 var texto = r.error ? r.error.mensaje : (r.detalle || '');
                 mostrarVelo('error', r.titulo || 'La aplicación no arrancó', texto);
@@ -200,9 +179,7 @@ var ClaseAngular = (function () {
     }
 
     /* ------------------------------------------------------------------------
-     * Editor: textarea transparente encima de un <pre> pintado.
-     * Es la misma técnica que app.js; se repite acá porque app.js ata el editor
-     * a variables globales que no se pueden compartir.
+     * Editor
      * ---------------------------------------------------------------------- */
 
     var editor = { texto: null, pinta: null, regleta: null };
@@ -263,7 +240,6 @@ var ClaseAngular = (function () {
             editor.regleta.scrollTop = editor.texto.scrollTop;
         });
         editor.texto.addEventListener('keydown', function (e) {
-            /* Tab inserta dos espacios; no saca el foco del editor. */
             if (e.key === 'Tab' && !e.shiftKey) {
                 e.preventDefault();
                 var t = editor.texto, a = t.selectionStart, b = t.selectionEnd;
@@ -281,8 +257,6 @@ var ClaseAngular = (function () {
     function paso() { return PASOS[estado.paso]; }
 
     function dibujarIndice() {
-        /* Mismas clases que dibuja app.js en Express (paso-indice, numero-paso,
-           titulo-paso, tilde): así el índice hereda todo su estilo de clase.css. */
         el.indice.innerHTML = PASOS.map(function (p, i) {
             var hecho = estado.completados[p.id] ? ' hecho' : '';
             var activo = i === estado.paso ? ' activo' : '';
@@ -302,15 +276,6 @@ var ClaseAngular = (function () {
 
     /* ------------------------------------------------------------------------
      * El proyecto de cada paso
-     *
-     * Cada paso trae SU proyecto completo (`semilla`). Al entrar se carga esa
-     * semilla, y lo que el alumno escribe se guarda POR PASO en `estado.trabajo`:
-     * volver a un paso ya trabajado recupera su código, y avanzar a uno nuevo
-     * arranca limpio, sin arrastrar archivos de otro estilo (módulos o standalone).
-     *
-     * El proyecto en pantalla (`estado.archivos`) es el MISMO objeto que
-     * `estado.trabajo[estado.proyectoDe]`: cualquier edición queda guardada sin
-     * código extra. No se puede reasignar `estado.archivos` sin actualizar los dos.
      * ---------------------------------------------------------------------- */
 
     function clonar(obj) {
@@ -319,11 +284,9 @@ var ClaseAngular = (function () {
         return c;
     }
 
-    /* Devuelve true si se llegó desde otro paso, false si es una recarga. */
     function armarProyectoDelPaso(indice) {
         var p = PASOS[indice];
 
-        /* Recarga de la página: el proyecto en pantalla ya es el de este paso. */
         if (estado.proyectoDe === p.id && Object.keys(estado.archivos).length) return false;
 
         var previo = estado.trabajo[p.id];
@@ -371,10 +334,7 @@ var ClaseAngular = (function () {
     }
 
     /* ------------------------------------------------------------------------
-     * Teoría: dibujarBloques de app.js pinta los bloques de código con el
-     * resaltador de JavaScript. Acá se necesita el de TypeScript + HTML, así
-     * que se pintan los bloques de código a mano y el resto (h, p, tabla...)
-     * se delega en app.js sin cambiarlo.
+     * Teoría
      * ---------------------------------------------------------------------- */
 
     function dibujarBloquesAngular(bloques) {
@@ -417,6 +377,7 @@ var ClaseAngular = (function () {
         VerificadorAngular.verificar(VistaAngular, estado.archivos, p.chequeos || [], 'app/app.component.ts')
             .then(function (r) {
                 boton.disabled = false;
+                if (CLASE_ACTUAL.api) $('red').value = 'normal';
                 if (r.ok) {
                     estado.completados[p.id] = true;
                     guardarYa();
@@ -426,8 +387,7 @@ var ClaseAngular = (function () {
                         '<h4>¡Bien! Este paso está resuelto.</h4>' +
                         (ultimo ? '<p>Completaste la clase.</p>'
                                 : '<p>Podés seguir con el próximo.</p><button class="boton primario" id="ng-ir-siguiente">Siguiente paso →</button>'));
-                    var s = $('ng-ir-siguiente');
-                    if (s) s.addEventListener('click', function () { irAPaso(estado.paso + 1); });
+                    if (!ultimo) $('ng-ir-siguiente').addEventListener('click', function () { irAPaso(estado.paso + 1); });
                     return;
                 }
                 var html = '<h4>' + escaparTexto(r.titulo || 'Todavía no') + '</h4>';
@@ -435,8 +395,6 @@ var ClaseAngular = (function () {
                 if (r.pista) html += '<p class="pista"><strong>Pista:</strong> ' + escaparTexto(r.pista) + '</p>';
                 if (r.errorAngular) html += '<pre class="error-angular">' + escaparTexto(r.errorAngular) + '</pre>';
                 mostrarResultado('mal', html);
-                /* La verificación deja la vista en el estado del último chequeo;
-                   se vuelve a ejecutar para que lo que se ve coincida con lo escrito. */
                 ejecutar();
             });
     }
@@ -452,9 +410,23 @@ var ClaseAngular = (function () {
         ejecutar();
     }
 
+    function reiniciarPaso() {
+        var p = paso();
+        if (!confirm('Se descarta lo que escribiste en este paso y vuelve el código inicial. ¿Seguro?')) return;
+        var base = clonar(p.semilla);
+        estado.trabajo[p.id] = base;
+        estado.archivos = base;
+        estado.proyectoDe = p.id;
+        limpiarResultado();
+        abrirArchivo(archivoAAbrir(p, true));
+        guardarYa();
+        limpiarConsola();
+        ejecutar();
+    }
+
     function reiniciarTodo() {
         if (!confirm('Se borra todo tu avance de esta clase y se empieza de cero. ¿Seguro?')) return;
-        try { localStorage.removeItem(CLASE_ACTUAL.clave); } catch (e) { /* nada */ }
+        try { localStorage.removeItem(CLASE_ACTUAL.clave); } catch (e) { }
         location.reload();
     }
 
@@ -472,7 +444,7 @@ var ClaseAngular = (function () {
                     p.hidden = p.id !== 'ng-panel-' + cual;
                 });
                 if (cual === 'consola') {
-                    el.contadorErrores.hidden = true;   // ya los vio
+                    el.contadorErrores.hidden = true;
                 }
             });
         });
@@ -501,13 +473,17 @@ var ClaseAngular = (function () {
 
         $('boton-verificar').addEventListener('click', verificar);
         $('boton-solucion').addEventListener('click', verSolucion);
+        $('boton-reiniciar-paso').addEventListener('click', reiniciarPaso);
+        if (CLASE_ACTUAL.api) {
+            $('red-caja').hidden = false;
+            $('red').addEventListener('change', function () { VistaAngular.inspeccionar({ red: $('red').value }); });
+        }
         $('boton-reiniciar').addEventListener('click', reiniciarTodo);
         $('anterior').addEventListener('click', function () { irAPaso(estado.paso - 1); });
         $('siguiente').addEventListener('click', function () { irAPaso(estado.paso + 1); });
         $('ng-recargar').addEventListener('click', function () { limpiarConsola(); ejecutar(); });
         $('ng-limpiar-consola').addEventListener('click', limpiarConsola);
 
-        /* copiar (los botones de los bloques de código) */
         $('columna-teoria').addEventListener('click', function (e) {
             var b = e.target.closest('[data-copiar]');
             if (!b) return;

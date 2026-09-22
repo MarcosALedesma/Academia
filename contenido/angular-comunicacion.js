@@ -1,36 +1,12 @@
-/* ============================================================================
- * angular-comunicacion.js — Parte A del resto del apunte: comunicación entre
- * componentes. Secciones 5 a 9: @Input, @Output, two-way binding, ng-content,
- * @ViewChild. Agrega los pasos 11 a 23 a la clase de Angular.
- *
- * Mismo esquema que contenido/angular-inicial.js (ver el vocabulario de
- * chequeos ahí), con estas diferencias:
- *
- *   - Los proyectos usan MÓDULOS (app.module.ts con declarations), que es lo
- *     que enseña el apunte y lo que se toma en el parcial. NgIf, NgFor y
- *     NgClass vienen con BrowserModule: no hay que importarlos.
- *   - Cada paso trae en `semilla` su proyecto COMPLETO. Al entrar al paso se
- *     carga esa semilla, y el trabajo del alumno se guarda por paso.
- *   - Un chequeo nuevo: { dom: { enfocado: { selector } } } mira qué elemento
- *     tiene el foco del teclado. Lo usan los pasos de @ViewChild.
- *
- * Los helpers de acá abajo sólo arman texto (código de ejemplo): el contenido
- * sigue siendo dato.
- * ========================================================================== */
-
 (function () {
     'use strict';
 
-    /* Saca el salto de línea inicial de un template literal, para escribir el
-       código del proyecto pegado al margen. */
     function C(t) { return t.replace(/^\n/, ''); }
 
-    /* Regex de:  import { ..., X, ... } from '@angular/core' */
     function imp(nombre) {
         return 'import\\s*\\{[^}]*\\b' + nombre + '\\b[^}]*\\}\\s*from\\s*.@angular/core';
     }
 
-    /* El app.module.ts de un proyecto. hijos: [['NombreComponent', './ruta/archivo'], ...] */
     function moduloDe(hijos, conFormularios) {
         var l = [
             "import { NgModule } from '@angular/core';",
@@ -55,7 +31,6 @@
 
     var pasos = [
 
-/* ========================================================================== */
 {
     id: 'p11',
     titulo: '@Input: del padre al hijo',
@@ -214,7 +189,6 @@ export class TarjetaComponent {
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p12',
     titulo: '@Input con objetos e interfaces',
@@ -367,7 +341,6 @@ export class AppComponent {
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p13',
     titulo: 'Un componente reutilizable (y una trampa)',
@@ -492,7 +465,6 @@ export class AppComponent {}
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p14',
     titulo: '@Output: del hijo al padre',
@@ -650,7 +622,6 @@ export class AppComponent {
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p15',
     titulo: 'Input y Output juntos: lista de tareas',
@@ -813,7 +784,6 @@ export class AppComponent {
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p16',
     titulo: 'Dos eventos desde el mismo hijo',
@@ -986,7 +956,6 @@ export class AppComponent {
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p17',
     titulo: 'Emitir un objeto tipado',
@@ -1175,7 +1144,6 @@ export class AppComponent {
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p18',
     titulo: 'Two-way binding propio: [(cantidad)]',
@@ -1327,7 +1295,6 @@ export class AppComponent {
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p19',
     titulo: 'ng-content: proyectar contenido',
@@ -1468,7 +1435,6 @@ export class TarjetaComponent {
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p20',
     titulo: 'ng-content con select: varias ranuras',
@@ -1607,7 +1573,6 @@ export class TarjetaComponent {}
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p21',
     titulo: '@ViewChild: llamar al hijo desde el padre',
@@ -1756,7 +1721,6 @@ export class AppComponent {
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p22',
     titulo: '@ViewChild con ElementRef: dar foco',
@@ -1852,7 +1816,6 @@ export class AppComponent {
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p23',
     titulo: 'Desafío: el modal reutilizable',
@@ -2051,11 +2014,9 @@ export class ModalComponent {
         { sinErrores: true,
           pista: 'Si el error dice NG0303 con visible, titulo, confirmar o cancelar, falta declarar ese @Input o @Output en el modal.' },
 
-        /* Cerrado */
         { dom: { noExiste: { selector: '.overlay' } },
           pista: 'Con visible en false el modal no tiene que existir. El fondo (clase overlay) va con *ngIf="visible".' },
 
-        /* Caso a: cancelar un turno, confirmando */
         { accion: { clic: '#abrir-turno' } },
         { dom: { contar: { selector: '.overlay', es: 1 } },
           pista: 'Al apretar "Cancelar turno" tiene que aparecer el modal. Revisá que el *ngIf dependa de visible.' },
@@ -2071,7 +2032,6 @@ export class ModalComponent {
         { dom: { noExiste: { selector: '.overlay' } },
           pista: 'Después de confirmar el padre cierra el modal: visible vuelve a false y el modal desaparece.' },
 
-        /* Caso b: el MISMO modal con otro contenido, cancelando */
         { accion: { clic: '#abrir-paciente' } },
         { dom: { textos: { selector: '.modal-titulo', igual: ['Eliminar paciente'] } },
           pista: 'El mismo modal tiene que servir para otro caso sin modificarlo: el título viene del padre.' },

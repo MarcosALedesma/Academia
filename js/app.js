@@ -1,14 +1,3 @@
-/* ============================================================================
- * app.js — La interfaz de las clases (la misma para inicial y avanzada).
- *
- * Estado, navegación entre pasos, editor, verificación y panel de pedidos.
- * El contenido está en pasos.js; la ejecución, en runner.js y motor.js. Acá no
- * hay nada de Express: sólo pantalla.
- * ========================================================================== */
-
-/* La clave de localStorage, el motor, los paquetes y los textos propios de cada clase
-   salen de CLASE_ACTUAL (clases.js); el contenido, de PASOS (contenido/<clase>.js). */
-
 const estado = {
     paso: 0,
     archivos: {},
@@ -20,13 +9,9 @@ const estado = {
 
 let terminal = null;
 
-/* --------------------------------------------------------------------------
+/* ------------------------------------------------------------------------
  * Persistencia
- *
- * La clase dura dos horas y el navegador de una máquina del laboratorio se
- * reinicia solo más seguido de lo que uno querría. Todo lo que el alumno
- * escribe se guarda en cada tecla: si se corta la luz, se recupera.
- * ------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------- */
 
 let relojGuardado = null;
 
@@ -35,7 +20,6 @@ function guardar() {
     relojGuardado = setTimeout(guardarYa, 300);
 }
 
-/** Escribe en el momento, sin esperar los 300 ms. main.js lo llama antes de salir de la clase. */
 function guardarYa() {
     clearTimeout(relojGuardado);
     try {
@@ -46,7 +30,7 @@ function guardarYa() {
             completados: estado.completados,
             archivoActivo: estado.archivoActivo
         }));
-    } catch (e) { /* modo incógnito o disco lleno: se sigue sin guardar */ }
+    } catch (e) { }
 }
 
 function recuperar() {
@@ -73,21 +57,15 @@ function escapar(texto) {
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/** `código` y **negrita**. Nada más: no es Markdown y no queremos que lo sea. */
 function marcado(texto) {
     return escapar(texto)
         .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 }
 
-/* --------------------------------------------------------------------------
+/* ------------------------------------------------------------------------
  * Resaltado de sintaxis
- *
- * Un <pre> abajo con el texto coloreado y el <textarea> encima con la letra
- * transparente y el cursor visible. Los dos con exactamente la misma tipografía,
- * el mismo interlineado y el mismo padding, y los scrolls atados: si se
- * despegan, se nota enseguida.
- * ------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------- */
 
 const PALABRAS = ('const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|' +
                   'new|delete|typeof|instanceof|in|of|class|extends|this|null|undefined|true|false|' +
@@ -95,12 +73,12 @@ const PALABRAS = ('const|let|var|function|return|if|else|for|while|do|switch|cas
 
 function resaltar(codigo) {
     const patron = new RegExp(
-        '(\\/\\*[\\s\\S]*?\\*\\/|\\/\\/[^\\n]*)' +                    // 1 comentarios
-        '|(\'(?:[^\'\\\\\\n]|\\\\.)*\'|"(?:[^"\\\\\\n]|\\\\.)*"|`(?:[^`\\\\]|\\\\.)*`)' +  // 2 textos
-        '|(\\b\\d+(?:\\.\\d+)?\\b)' +                                 // 3 números
-        '|\\b(' + PALABRAS.join('|') + ')\\b' +                       // 4 palabras clave
-        '|(\\.[A-Za-z_$][\\w$]*)' +                                   // 5 .propiedades
-        '|\\b([A-Za-z_$][\\w$]*)(?=\\s*\\()',                         // 6 llamadas
+        '(\\/\\*[\\s\\S]*?\\*\\/|\\/\\/[^\\n]*)' +
+        '|(\'(?:[^\'\\\\\\n]|\\\\.)*\'|"(?:[^"\\\\\\n]|\\\\.)*"|`(?:[^`\\\\]|\\\\.)*`)' +
+        '|(\\b\\d+(?:\\.\\d+)?\\b)' +
+        '|\\b(' + PALABRAS.join('|') + ')\\b' +
+        '|(\\.[A-Za-z_$][\\w$]*)' +
+        '|\\b([A-Za-z_$][\\w$]*)(?=\\s*\\()',
         'g');
 
     let salida = '';
@@ -115,8 +93,6 @@ function resaltar(codigo) {
         ultimo = m.index + m[0].length;
     }
     salida += escapar(codigo.slice(ultimo));
-    /* El salto final hace que la última línea no quede pegada al borde y que
-       el <pre> y el <textarea> midan lo mismo. */
     return salida + '\n';
 }
 
@@ -185,9 +161,6 @@ function iniciarEditor() {
     });
 
     editor.texto.addEventListener('keydown', function (evento) {
-        /* Tab mete dos espacios en vez de saltar de control. En un editor de
-           código es lo que uno espera; el precio es que hay que salir con el
-           mouse, y para eso está Escape+Tab. */
         if (evento.key === 'Tab') {
             evento.preventDefault();
             const t = editor.texto;
@@ -197,8 +170,6 @@ function iniciarEditor() {
             t.dispatchEvent(new Event('input'));
             return;
         }
-        /* Enter mantiene la indentación de la línea anterior, y la aumenta si
-           esa línea terminaba en llave o paréntesis abierto. */
         if (evento.key === 'Enter') {
             const t = editor.texto;
             const hastaAca = t.value.slice(0, t.selectionStart);
@@ -238,9 +209,9 @@ function abrirArchivo(nombre) {
 function dibujarSolapas() {
     const contenedor = document.getElementById('solapas-archivos');
     const nombres = Object.keys(estado.archivos).sort(function (a, b) {
-        if (a === 'app.js') return -1;                  // app.js siempre primero
+        if (a === 'app.js') return -1;
         if (b === 'app.js') return 1;
-        if (a === 'package.json') return 1;             // y package.json último
+        if (a === 'package.json') return 1;
         if (b === 'package.json') return -1;
         return a.localeCompare(b);
     });
@@ -268,13 +239,9 @@ function nuevoArchivo() {
     abrirArchivo(limpio);
 }
 
-/* --------------------------------------------------------------------------
+/* ------------------------------------------------------------------------
  * El aviso de "guardaste pero no reiniciaste"
- *
- * Es el tropiezo número uno de la clase: cambian el código, hacen curl y ven
- * el comportamiento viejo. En Node pasa exactamente igual y por eso existe
- * nodemon. Acá se avisa, pero no se reinicia solo: que lo hagan ellos.
- * ------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------- */
 
 let desincronizado = false;
 
@@ -321,7 +288,6 @@ function irAPaso(indice) {
     estado.paso = indice;
     const paso = PASOS[indice];
 
-    /* La semilla NUNCA pisa lo que el alumno escribió: sólo crea lo que falta. */
     if (paso.semilla) {
         let creado = null;
         Object.keys(paso.semilla).forEach(function (n) {
@@ -329,8 +295,6 @@ function irAPaso(indice) {
             estado.archivos[n] = paso.semilla[n];
             if (creado === null) creado = n;
         });
-        /* Se abre la solapa nueva sólo la primera vez. Volver a un paso ya
-           hecho no tiene por qué sacarte del archivo donde estabas. */
         if (creado !== null) estado.archivoActivo = creado;
     }
 
@@ -415,12 +379,8 @@ function apagarProyecto() {
     return apagar();
 }
 
-/** El único camino por el que sale un pedido, venga del curl o del panel. */
 function hacerPedido(pedido) {
     return pedir(pedido).then(function (resp) {
-        /* Lo que el servidor imprime va a la consola, porque es su salida
-           estándar. En la vida real serían dos ventanas distintas; acá se
-           distingue por color. */
         (resp.consola || []).forEach(function (l) {
             terminal.escribir(l.texto, 'log-servidor');
         });
@@ -505,7 +465,7 @@ function enviarPedidoDelPanel() {
     hacerPedido({ metodo: metodo, ruta: ruta, cabeceras: cabeceras,
                   cuerpoCrudo: conCuerpo ? cuerpo : '' }).then(function (resp) {
 
-        if (resp.titulo) {                               // se colgó y lo mataron
+        if (resp.titulo) {
             estado.servidorCorriendo = false;
             refrescarRutas();
             caja.className = 'respuesta mal';
@@ -530,7 +490,7 @@ function enviarPedidoDelPanel() {
         let cuerpoMostrado = resp.cuerpo;
         if (tipo.indexOf('application/json') !== -1) {
             try { cuerpoMostrado = JSON.stringify(JSON.parse(resp.cuerpo), null, 2); }
-            catch (e) { /* si no parsea, se muestra crudo */ }
+            catch (e) { }
         }
 
         caja.className = 'respuesta ' + (resp.estado >= 400 ? 'mal' : 'bien');
@@ -580,9 +540,6 @@ function verificarPaso() {
             boton.disabled = false;
             boton.textContent = 'Verificar';
 
-            /* La verificación reinicia el proceso. Si el alumno tenía datos
-               cargados a mano, se le fueron: mejor decírselo que dejarlo
-               descubrir solo por qué la lista volvió a tener tres. */
             if (estado.servidorCorriendo) {
                 terminal.escribir('[clase] La verificación reinició el servidor con el código actual' +
                                   (CLASE_ACTUAL.reinicioConBase ? ' y una base de datos vacía' : '') +
@@ -661,7 +618,7 @@ function verSolucion() {
 function reiniciarTodo() {
     if (!confirm('Esto borra TODO: los archivos que escribiste, los paquetes instalados y el ' +
                  'progreso de los ' + PASOS.length + ' pasos. No se puede deshacer. ¿Seguro?')) return;
-    try { localStorage.removeItem(CLASE_ACTUAL.clave); } catch (e) { /* da igual */ }
+    try { localStorage.removeItem(CLASE_ACTUAL.clave); } catch (e) { }
     location.reload();
 }
 
@@ -706,8 +663,6 @@ function arrancar() {
             escribirArchivo: function (n, c) {
                 const eraNuevo = estado.archivos[n] === undefined;
                 estado.archivos[n] = c;
-                /* El primer archivo del proyecto lo crea `npm init`, y hasta
-                   ese momento el editor está vacío y sin solapa activa. */
                 if (eraNuevo && estado.archivos[estado.archivoActivo] === undefined) {
                     abrirArchivo(n);
                 } else {
@@ -719,7 +674,6 @@ function arrancar() {
             instalados: function () { return estado.instalados; },
             instalar: function (nombre, version) {
                 estado.instalados[nombre] = version;
-                /* npm install también toca el package.json: es la mitad del punto. */
                 const crudo = estado.archivos['package.json'];
                 if (crudo) {
                     try {
@@ -728,7 +682,7 @@ function arrancar() {
                         p.dependencies[nombre] = '^' + version;
                         estado.archivos['package.json'] = JSON.stringify(p, null, 2) + '\n';
                         if (estado.archivoActivo === 'package.json') abrirArchivo('package.json');
-                    } catch (e) { /* si estaba roto, no se toca */ }
+                    } catch (e) { }
                 }
                 guardar();
             },
@@ -756,7 +710,6 @@ function arrancar() {
         if (e.key === 'Enter') enviarPedidoDelPanel();
     });
 
-    /* Los botones "copiar" de los bloques de código de la teoría. */
     document.addEventListener('click', function (evento) {
         const boton = evento.target.closest('.copiar');
         if (!boton) return;
@@ -780,4 +733,3 @@ function arrancar() {
     terminal.enfocar();
 }
 
-/* arrancar() lo llama main.js cuando la ruta es una clase. */

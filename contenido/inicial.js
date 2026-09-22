@@ -1,42 +1,5 @@
-/* ============================================================================
- * pasos.js — EL CONTENIDO DE LA CLASE. Dato puro, sin funciones.
- *
- * Es el único archivo que hay que tocar para cambiar la clase. Todo lo demás
- * es infraestructura.
- *
- * ESQUEMA DE UN PASO
- * ------------------
- *   id           string corto y estable. Se usa para guardar el progreso.
- *   titulo       lo que se ve en la lista de la izquierda
- *   minutos      estimación para el docente; la suma se muestra arriba
- *   teoria       [bloques]  lo que se explica
- *   consigna     [bloques]  lo que tiene que hacer el alumno
- *   semilla      { archivo: contenido }  se escribe en el editor SI el archivo
- *                no existe todavía (nunca pisa lo que el alumno escribió)
- *   solucion     { archivo: contenido }  el proyecto ENTERO al terminar el paso.
- *                Es lo que pega el botón "Ver la solución" y lo que corre el
- *                banco de pruebas.
- *   chequeos     [chequeos]  el vocabulario está documentado en motor.js
- *   probar       [{metodo, ruta, cuerpo}]  botones del panel de pedidos
- *   consolaSugerida ['comando', ...]  botones de la consola
- *
- * BLOQUES (teoria y consigna)
- * ---------------------------
- *   { h: 'subtítulo' }            { p: 'párrafo' }
- *   { lista: [...] }              { numerada: [...] }
- *   { codigo: '...', archivo: 'app.js' }
- *   { terminal: '...' }           bloque de consola
- *   { clave: '...' }              caja azul: la idea que hay que llevarse
- *   { nota: '...' }               caja amarilla: el error que van a cometer
- *   { tabla: { cabeceras: [...], filas: [[...]] } }
- *
- * En p/lista/nota/clave/h se puede usar `código` entre acentos graves y
- * **negrita** entre asteriscos dobles. Nada más: no es Markdown.
- * ========================================================================== */
-
 CONTENIDO.inicial = [
 
-/* ========================================================================== */
 {
     id: 'p01',
     titulo: 'El proyecto',
@@ -87,7 +50,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p02',
     titulo: 'El servidor mínimo',
@@ -140,7 +102,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p03',
     titulo: 'La primera ruta',
@@ -194,7 +155,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p04',
     titulo: 'Devolver datos: res.json',
@@ -246,7 +206,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p05',
     titulo: 'Un alumno solo: req.params',
@@ -297,7 +256,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p06',
     titulo: 'Códigos de estado: el 404',
@@ -360,7 +318,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p07',
     titulo: 'Crear: POST y req.body',
@@ -436,7 +393,6 @@ CONTENIDO.inicial = [
 }
 ,
 
-/* ========================================================================== */
 {
     id: 'p08',
     titulo: 'Validar: el 400',
@@ -501,7 +457,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p09',
     titulo: 'Modificar: PUT',
@@ -571,7 +526,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p10',
     titulo: 'Borrar: DELETE (y el bug del id)',
@@ -639,7 +593,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p11',
     titulo: 'Filtrar: req.query',
@@ -712,7 +665,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p12',
     titulo: 'Middleware propio y next()',
@@ -777,7 +729,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p13',
     titulo: 'Ordenar: express.Router()',
@@ -875,7 +826,6 @@ CONTENIDO.inicial = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p14',
     titulo: 'Desafío: el recurso materias',

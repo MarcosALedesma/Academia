@@ -1,24 +1,3 @@
-/* ============================================================================
- * resaltador-angular.js — Colorea TypeScript y HTML de Angular.
- *
- * Lo necesita la clase de Angular y NO sirve resaltar() de app.js para eso:
- * ese sólo entiende JavaScript, y un archivo de Angular tiene tres lenguajes
- * mezclados:
- *
- *   TypeScript   la clase, los decoradores, las interfaces y los tipos
- *   HTML         el template, casi siempre adentro de comillas invertidas
- *   Angular      lo que va DENTRO del HTML: {{ }}, [prop], (evento), *ngIf
- *
- * Es una función pura: recibe texto, devuelve HTML ya escapado. No toca el DOM
- * ni ninguna variable global. Las clases de color (c-*) son las mismas de
- * css/clase.css, así que el editor y la teoría se ven igual que en Express.
- *
- * Clases nuevas que se agregan a clase.css (ver bloque "Angular" al final):
- *   c-etiqueta   <div>, </p>        c-atributo   class=, id=
- *   c-angular    [x] (x) *ngIf      c-interp     {{ ... }}
- *   c-tipo       string, Turno      c-decorador  @Component
- * ========================================================================== */
-
 var ResaltadorAngular = (function () {
     'use strict';
 
@@ -32,7 +11,6 @@ var ResaltadorAngular = (function () {
      * HTML + sintaxis de Angular
      * ---------------------------------------------------------------------- */
 
-    /* Un atributo de Angular es el que lleva [ ], ( ), [( )] o *. */
     function esAtributoAngular(nombre) {
         return /^(\[.*\]|\(.*\)|\*.*|#.*)$/.test(nombre);
     }
@@ -48,7 +26,6 @@ var ResaltadorAngular = (function () {
 
     function resaltarHtml(html) {
         var salida = '', ultimo = 0, m;
-        /* 1 comentario   2 etiqueta completa */
         var re = /(<!--[\s\S]*?-->)|(<\/?[A-Za-z][\w-]*(?:\s+[^<>]*?)?\s*\/?>)/g;
 
         while ((m = re.exec(html)) !== null) {
@@ -70,7 +47,6 @@ var ResaltadorAngular = (function () {
         var salida = span('c-etiqueta', m[1] + m[2]);
         var resto = m[3];
         var ultimo = 0, a;
-        /* nombre  y opcionalmente  ="valor"  |  ='valor'  |  =valor */
         var reAtr = /([^\s=<>"']+)(?:(\s*=\s*)("[^"]*"|'[^']*'|[^\s"'<>]+))?/g;
 
         while ((a = reAtr.exec(resto)) !== null) {
@@ -101,16 +77,9 @@ var ResaltadorAngular = (function () {
 
     var TIPOS = 'string|number|boolean|any|void|never|unknown|object|Array|Promise|Date|Observable|EventEmitter|Subscription'.split('|');
 
-    /**
-     * Recibe el interior de un template literal y decide si es HTML de Angular.
-     * Sólo se resalta como HTML si contiene al menos una etiqueta; si no, es un
-     * string común (`Hola ${nombre}`) y se pinta como texto.
-     */
     function pareceHtml(t) { return /<[A-Za-z\/!]/.test(t); }
 
     function resaltarTypescript(codigo) {
-        /* 1 comentario  2 template  3 texto  4 número  5 decorador  6 palabra
-           7 tipo   8 .propiedad   9 llamada   */
         var re = new RegExp(
             '(\\/\\*[\\s\\S]*?\\*\\/|\\/\\/[^\\n]*)' +
             '|(`(?:[^`\\\\]|\\\\[\\s\\S])*`)' +
@@ -147,8 +116,6 @@ var ResaltadorAngular = (function () {
 
     /* ------------------------------------------------------------------------
      * API pública
-     *   resaltar(codigo, lenguaje)   lenguaje: 'ts' | 'html' | 'auto' (por omisión)
-     *   lenguajeDe(nombreArchivo)    'ts' | 'html' | 'css' | 'json' | 'texto'
      * ---------------------------------------------------------------------- */
 
     function lenguajeDe(nombre) {
@@ -176,16 +143,12 @@ var ResaltadorAngular = (function () {
     function resaltar(codigo, lenguaje) {
         var l = lenguaje || 'auto';
         if (l === 'auto') {
-            /* Si arranca con "<" es HTML; si no, TypeScript. Los bloques de
-               teoría mezclan las dos cosas y esto alcanza. */
             l = /^\s*(<|<!--)/.test(codigo) ? 'html' : 'ts';
         }
         var pintado = l === 'html' ? resaltarHtml(codigo)
                     : l === 'css'  ? resaltarCss(codigo)
                     : l === 'json' || l === 'ts' ? resaltarTypescript(codigo)
                     : esc(codigo);
-        /* El salto final hace que la última línea no quede pegada al borde y
-           que el <pre> y el <textarea> del editor midan lo mismo. */
         return pintado + '\n';
     }
 

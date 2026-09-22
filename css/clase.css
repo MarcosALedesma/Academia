@@ -1,9 +1,3 @@
-/* ============================================================================
- * clase.css — Estilos de las clases de Express y del panel de inicio.
- * La paleta es la misma que la del parcial de Angular, para que las dos
- * herramientas de la cursada se vean de la misma familia.
- * ========================================================================== */
-
 :root {
     --fondo:          #eef1f6;
     --panel:          #ffffff;
@@ -26,7 +20,6 @@
     --amarillo-claro: #fff8d6;
     --amarillo-borde: #e6c84a;
 
-    /* Editor y consola, tema oscuro tipo VSCode */
     --editor-fondo:   #1e1e1e;
     --editor-panel:   #252526;
     --editor-borde:   #3c3c3c;
@@ -211,7 +204,6 @@ kbd {
 .bloque-consigna ul, .bloque-consigna ol { margin: 0 0 12px; padding-left: 22px; font-size: 0.93rem; }
 .teoria li, .bloque-consigna li { margin-bottom: 6px; }
 
-/* Cajas de "la idea" y "ojo" */
 .caja {
     position: relative;
     border-radius: 6px;
@@ -232,7 +224,6 @@ kbd {
 .caja.nota { background: var(--amarillo-claro); border-left: 4px solid var(--amarillo-borde); }
 .caja.nota .etiqueta-caja { color: #8a6d00; }
 
-/* Bloques de código en la teoría */
 .bloque-codigo, .bloque-terminal {
     position: relative;
     margin: 12px 0 16px;
@@ -261,7 +252,6 @@ kbd {
 .bloque-terminal pre { color: #9cdcaa; }
 .bloque-terminal pre::before { content: ''; }
 
-/* Diagramas de la teoría: ASCII, para mostrar un flujo de un vistazo */
 .bloque-diagrama {
     margin: 12px 0 16px;
     border-radius: 6px;
@@ -296,7 +286,6 @@ kbd {
 .bloque-codigo:hover .copiar, .bloque-terminal:hover .copiar { opacity: 1; }
 .copiar:hover { background: rgba(255, 255, 255, 0.20); }
 
-/* Tablas de la teoría */
 .envoltorio-tabla { overflow-x: auto; margin: 12px 0 16px; }
 .envoltorio-tabla table {
     width: 100%;
@@ -316,7 +305,6 @@ kbd {
 }
 .envoltorio-tabla td { padding: 7px 10px; border: 1px solid var(--borde); vertical-align: top; }
 
-/* Consigna */
 .bloque-consigna {
     margin-top: 26px;
     background: var(--panel);
@@ -344,7 +332,6 @@ kbd {
 .boton.fantasma { background: var(--panel); color: var(--tinta-suave); border-color: var(--borde-fuerte); }
 .boton.fantasma:hover:not(:disabled) { background: var(--panel-suave); color: var(--tinta); }
 
-/* Resultado de la verificación */
 .resultado {
     margin-top: 14px;
     border-radius: 6px;
@@ -444,10 +431,6 @@ kbd {
     overflow: hidden;
 }
 
-/* El editor: <pre> pintado abajo, <textarea> transparente arriba.
-   Las tres cajas comparten tipografía, tamaño, interlineado y padding: si
-   alguna se despega, el cursor deja de caer donde corresponde. */
-
 .regleta, .pintado, #editor {
     font-family: var(--mono);
     font-size: 0.82rem;
@@ -492,7 +475,6 @@ kbd {
 }
 #editor::selection { background: rgba(61, 133, 198, 0.40); }
 
-/* Colores del resaltado */
 .c-comentario { color: #6a9955; }
 .c-texto      { color: #ce9178; }
 .c-numero     { color: #b5cea8; }
@@ -775,8 +757,6 @@ kbd {
     .progreso { display: none; }
 }
 
-/* El editor cuando el proyecto todavía no tiene ni un archivo: sin esto, el
-   paso 1 se ve como si la herramienta estuviera rota. */
 .editor-vacio {
     position: absolute;
     inset: 0;
@@ -796,10 +776,7 @@ kbd {
 .editor-vacio[hidden] { display: none; }
 
 
-/* ============================================================================
- * Panel de inicio: la lista de clases y el avance de cada una.
- * Usa las mismas variables de color que el resto.
- * ========================================================================== */
+/* ---------------------------- Panel de inicio ---------------------------- */
 
 .vista-panel { height: 100vh; overflow-y: auto; }
 
@@ -843,8 +820,6 @@ kbd {
 
 .tarjeta-clase .nivel { grid-area: nivel; font-size: 0.85rem; font-weight: 600; color: var(--acento-oscuro); }
 
-/* Color de cada clase: se elige con `color` en clases.js. Sin `color`, azul.
-   Cambia la banderita del borde izquierdo y el texto del nivel. */
 .tarjeta-clase.color-verde   { --acento: var(--verde);   --acento-oscuro: #2d5f17; }
 .tarjeta-clase.color-violeta { --acento: var(--violeta); --acento-oscuro: #6b1fb3; }
 .tarjeta-clase.color-azul    { --acento: var(--azul);    --acento-oscuro: var(--azul-oscuro); }
@@ -880,34 +855,18 @@ kbd {
 }
 
 
-/* ==========================================================================
-   ANGULAR
-   Todo lo de la clase de Angular vive acá, bajo el prefijo .ng- (y los
-   colores c-* nuevos). Nada de lo de arriba se modifica: si se borra este
-   bloque, las clases de Express quedan exactamente como estaban.
-
-   Reutiliza la grilla .tablero, el índice, la teoría, el editor y la consola
-   de Express. Lo único propio es el taller: el editor comparte la fila con la
-   VISTA PREVIA (a la derecha, sobre fondo claro, como el "Preview" de
-   angular.dev), y abajo van la Consola y el Terminal.
-   ========================================================================== */
+/* ---------------------------- ANGULAR ---------------------------- */
 
 /* ---------------------------- colores nuevos del resaltador ---------------------------- */
 .c-etiqueta      { color: #569cd6; }
 .c-atributo      { color: #9cdcfe; }
-.c-angular       { color: #c586c0; }          /* [x]  (x)  *ngIf  #ref  → lo propio de Angular */
+.c-angular       { color: #c586c0; }
 .c-angular-valor { color: #d7ba7d; }
 .c-interp        { color: #4ec9b0; font-weight: 600; }
 .c-tipo          { color: #4ec9b0; }
 .c-decorador     { color: #dcdcaa; }
 
-/* ---------------------------- editor ----------------------------
-   Las reglas del editor de Express están atadas al id #editor, así que el
-   textarea de Angular (#ng-editor) no las recibe: quedaba como un cuadro chico
-   y sólo se podía escribir adentro de él. Se repiten acá para #ng-editor.
-   Tienen que ser idénticas a las de arriba: el <pre> pintado, el <textarea>
-   transparente y la regleta comparten tipografía e interlineado, y si una se
-   despega el cursor deja de caer donde corresponde. */
+/* ---------------------------- editor ---------------------------- */
 #ng-editor {
     font-family: var(--mono);
     font-size: 0.82rem;
@@ -955,7 +914,6 @@ kbd {
     min-width: 0;
 }
 
-/* el editor es el de Express: sólo se le da su propio contenedor */
 .ng-fila-superior .editor-caja { border-right: 1px solid var(--editor-borde); min-width: 0; }
 
 /* ---------------------------- vista previa ---------------------------- */
@@ -995,11 +953,9 @@ kbd {
 }
 .ng-icono:hover { color: #fff; background: #3a3a3c; }
 
-/* la pantalla donde vive el iframe: fondo blanco, como un navegador */
 .ng-vista-pantalla { flex: 1; min-height: 0; background: #fff; position: relative; }
 .marco-vista { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
 
-/* velo que aparece mientras Angular arranca o cuando algo se rompe */
 .ng-vista-velo {
     position: absolute; inset: 0; background: rgba(255,255,255,0.92);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1076,3 +1032,8 @@ kbd {
     font-weight: 600;
     color: var(--tinta-suave);
 }
+
+
+/* ---------------------------- Red simulada ---------------------------- */
+.ng-red { display: inline-flex; align-items: center; gap: 6px; font-family: var(--ui); font-size: 0.72rem; color: #9aa7b4; }
+.ng-red select { background: #2d2d30; color: #ddd; border: 1px solid #454549; border-radius: 4px; font-size: 0.72rem; padding: 1px 4px; }

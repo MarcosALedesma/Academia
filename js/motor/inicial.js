@@ -1,65 +1,26 @@
-/* ============================================================================
- * motor.js — Express, de mentira pero en serio.
- *
- * Vive adentro del Worker (ver motor-worker.js) y es el "Node" del alumno:
- * un require(), un console.log(), un sistema de archivos de juguete y una
- * reimplementación de Express hecha a mano.
- *
- * POR QUÉ SIMULAR EXPRESS EN VEZ DE CORRER NODE DE VERDAD
- * ------------------------------------------------------
- * Porque la clase se da en el aula, en 30 máquinas que no tienen Node
- * instalado, sin internet y sin permisos de administrador. El parcial de
- * Angular resolvió lo mismo con un shim de Angular (parcial-angular/js/motor.js)
- * y funcionó: el alumno escribe el código REAL, con la sintaxis REAL, y lo que
- * cambia es quién lo ejecuta. Acá pasa igual. Todo lo que el alumno escribe en
- * esta clase se copia y pega en un proyecto Node de verdad y anda igual.
- *
- * QUÉ ES FIEL Y QUÉ NO
- * --------------------
- * Fiel:   el orden de los middlewares, next(), el ruteo con :parámetros, la
- *         precedencia de rutas (gana la primera que matchea), req.params /
- *         req.query / req.body, res.status().json() encadenado, el 404 por
- *         defecto, y que req.body sea undefined si no pusiste express.json().
- * No es:  la red. No hay sockets, no hay puertos de verdad, no hay concurrencia.
- *         "escuchar en el 3000" acá es prender una bandera. Está dicho en la
- *         teoría del paso 2 y el alumno tiene que saberlo.
- *
- * EL ESTADO VIVE ACÁ Y SOBREVIVE ENTRE PEDIDOS
- * --------------------------------------------
- * A diferencia del parcial de Angular, este worker NO es de un solo uso: el
- * alumno hace `node app.js` una vez y después le pega con `curl` muchas veces.
- * Ese es justamente el concepto que hay que enseñar (el arreglo en memoria se
- * mantiene entre pedidos y se pierde al reiniciar el servidor), así que el
- * estado tiene que persistir en el worker igual que persistiría en el proceso.
- * El worker sólo se mata cuando el código del alumno se cuelga.
- * ========================================================================== */
-
 /* --------------------------------------------------------------------------
  * Estado del "proceso"
  * ------------------------------------------------------------------------ */
 
 const __proceso = {
-    archivos: {},        // nombre -> contenido (el proyecto del alumno)
-    modulos: {},         // caché de require, igual que la de Node
-    consola: [],         // lo que imprimió console.log desde el último corte
-    app: null,           // la app de Express que quedó escuchando
+    archivos: {},
+    modulos: {},
+    consola: [],
+    app: null,
     puerto: null,
     escuchando: false,
-    instalados: {},      // lo que "instaló" npm
-    corriendo: false     // ¿hay un node app.js vivo?
+    instalados: {},
+    corriendo: false
 };
 
 function __registrar(nivel, args) {
     const partes = args.map(function (v) { return __aTexto(v); });
     __proceso.consola.push({ nivel: nivel, texto: partes.join(' ') });
-    /* Un alumno con un console.log adentro de un bucle no tiene que poder
-       comerse la memoria de la pestaña. */
     if (__proceso.consola.length > 500) {
         __proceso.consola.splice(0, __proceso.consola.length - 500);
     }
 }
 
-/** console.log de Node: los objetos se muestran, no se convierten a "[object Object]". */
 function __aTexto(v) {
     if (typeof v === 'string') return v;
     if (v === undefined) return 'undefined';
@@ -77,13 +38,9 @@ const __consola = {
     table: function () { __registrar('log', [].slice.call(arguments)); }
 };
 
-/* --------------------------------------------------------------------------
- * Ruteo: '/api/alumnos/:id'  ->  expresión regular + nombres de parámetros
- *
- * Express usa path-to-regexp, que hace muchísimo más que esto (comodines,
- * opcionales, regex a medida). Acá alcanza con segmentos literales, :parámetros
- * y el '*' de cierre, que es todo lo que entra en el alcance de la clase.
- * ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------
+ * Ruteo: '/api/alumnos/:id'
+ * ---------------------------------------------------------------------- */
 
 function __compilarRuta(patron) {
     const nombres = [];
@@ -93,7 +50,7 @@ function __compilarRuta(patron) {
     if (p.length > 1 && p.charAt(p.length - 1) === '/') p = p.slice(0, -1);
 
     const fuente = p
-        .replace(/[.+^${}()|[\]\\]/g, '\\$&')     // literales de regex, menos * y ?
+        .replace(/[.+^${}()|[\]\\]/g, '\\$&')
         .replace(/\/:([A-Za-z_$][\w$]*)/g, function (_, nombre) {
             nombres.push(nombre);
             return '/([^/]+)';
@@ -113,14 +70,10 @@ function __emparejar(compilada, ruta) {
     return params;
 }
 
-/** Prefijo de app.use('/api', router): matchea el comienzo y devuelve el resto. */
 function __compilarPrefijo(patron) {
     let p = String(patron);
     if (p.length > 1 && p.charAt(p.length - 1) === '/') p = p.slice(0, -1);
 
-    /* Montado en la raíz, un middleware corre para TODOS los pedidos. Es el
-       caso de app.use(express.json()) y del logger del paso 12, o sea el 90 %
-       de los app.use que va a escribir el alumno. */
     if (p === '/' || p === '') return { regex: /^/, nombres: [], texto: '/' };
 
     const nombres = [];
@@ -145,7 +98,6 @@ function __parsearQuery(texto) {
         const i = par.indexOf('=');
         const clave = decodeURIComponent((i === -1 ? par : par.slice(0, i)).replace(/\+/g, ' '));
         const valor = i === -1 ? '' : decodeURIComponent(par.slice(i + 1).replace(/\+/g, ' '));
-        /* Express repite: ?x=1&x=2 llega como arreglo. */
         if (Object.prototype.hasOwnProperty.call(q, clave)) {
             if (Array.isArray(q[clave])) q[clave].push(valor);
             else q[clave] = [q[clave], valor];
@@ -156,15 +108,9 @@ function __parsearQuery(texto) {
     return q;
 }
 
-/* --------------------------------------------------------------------------
+/* ------------------------------------------------------------------------
  * req y res
- *
- * res guarda la respuesta en memoria en vez de escribirla en un socket. La
- * regla de oro de Express se respeta igual: una vez que respondiste,
- * respondiste. Un segundo res.json() en el mismo pedido tira el mismo error
- * que tira Node de verdad, porque es EL error que más van a ver en su vida
- * con Express.
- * ------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------- */
 
 function __crearReq(pedido) {
     const corte = pedido.ruta.indexOf('?');
@@ -184,9 +130,6 @@ function __crearReq(pedido) {
         baseUrl: '',
         params: {},
         query: __parsearQuery(cadena),
-        /* undefined a propósito: sin express.json() esto NO existe, y que el
-           alumno se coma el "Cannot read properties of undefined" es media
-           clase. El paso 7 lo explica. */
         body: undefined,
         headers: cabeceras,
         get: function (nombre) { return cabeceras[String(nombre).toLowerCase()]; },
@@ -253,8 +196,6 @@ function __crearRes() {
         }
         if (typeof dato === 'object') return res.json(dato);
         if (typeof dato === 'number') {
-            /* En Express 5 esto ya no significa "mandá ese código de estado":
-               manda el número como cuerpo. Se avisa porque confunde muchísimo. */
             __registrar('warn', ['[aviso] res.send(' + dato + ') manda el numero COMO TEXTO. ' +
                                  'El codigo de estado se pone con res.status(' + dato + ').']);
         }
@@ -286,13 +227,9 @@ function __crearRes() {
     return res;
 }
 
-/* --------------------------------------------------------------------------
- * El router: una pila de capas que se recorre en orden con next()
- *
- * Esto es literalmente lo que hace Express. Entenderlo es entender el 80 % del
- * framework: app.use y app.get no configuran nada mágico, apilan funciones, y
- * el pedido las va atravesando hasta que alguna responde.
- * ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------
+ * El router
+ * ---------------------------------------------------------------------- */
 
 const __METODOS = ['get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'all'];
 
@@ -356,7 +293,6 @@ function __crearRouter() {
         return router;
     };
 
-    /** Recorre las capas. `salir` es el next() del router de más afuera. */
     router.__manejar = function (req, res, salir) {
         let i = 0;
         const caminoOriginal = req.__camino;
@@ -369,9 +305,6 @@ function __crearRouter() {
             while (i < capas.length) {
                 const capa = capas[i++];
 
-                /* Un error se saltea todas las capas normales hasta encontrar
-                   un middleware de cuatro parámetros; sin error, se saltean los
-                   de cuatro. Es exactamente la regla de Express. */
                 if (error && capa.tipo !== 'error') continue;
                 if (!error && capa.tipo === 'error') continue;
 
@@ -405,7 +338,6 @@ function __crearRouter() {
     return router;
 }
 
-/** Llama a la capa y convierte cualquier excepción en el next(err) de Express. */
 function __invocar(capa, error, req, res, siguiente) {
     try {
         if (capa.tipo === 'error') capa.fn(error, req, res, siguiente);
@@ -429,9 +361,6 @@ function __crearExpress() {
         app.set = function (clave, valor) { app.__ajustes[clave] = valor; return app; };
         app.get_ajuste = function (clave) { return app.__ajustes[clave]; };
 
-        /* app.get() es ambiguo en Express: con un solo argumento lee un ajuste,
-           con dos declara una ruta. Casi nadie lo sabe y a alguno le va a pasar
-           de escribir app.get('/') sin manejador. */
         const getRuta = app.get;
         app.get = function (patron) {
             if (arguments.length === 1 && typeof patron === 'string') {
@@ -457,10 +386,9 @@ function __crearExpress() {
         return app;
     }
 
-    /* ---- express.json() ---------------------------------------------------
-       El de verdad sólo parsea si el Content-Type es application/json. Que sea
-       fiel importa: el alumno que se olvida la cabecera en el curl tiene que
-       ver req.body undefined y entender por qué. */
+    /* ------------------------------------------------------------------------
+     * express.json()
+     * ---------------------------------------------------------------------- */
     express.json = function (opciones) {
         const medio = function json(req, res, next) {
             const tipo = req.headers['content-type'] || '';
@@ -492,9 +420,9 @@ function __crearExpress() {
         return medio;
     };
 
-    /* ---- express.static() -------------------------------------------------
-       Sirve archivos del proyecto del alumno (los que estén en la carpeta que
-       le pase). No hay disco: se buscan en __proceso.archivos. */
+    /* ------------------------------------------------------------------------
+     * express.static()
+     * ---------------------------------------------------------------------- */
     express.static = function (carpeta) {
         const base = String(carpeta || 'public').replace(/^\.\//, '').replace(/\/$/, '');
         const medio = function serveStatic(req, res, next) {
@@ -518,16 +446,9 @@ function __crearExpress() {
     return express;
 }
 
-/* --------------------------------------------------------------------------
+/* ------------------------------------------------------------------------
  * require() y el "sistema de archivos"
- *
- * El require de Node hace tres cosas: resuelve el nombre a un archivo, lo
- * ejecuta UNA vez envolviéndolo en una función con (exports, require, module,
- * __filename, __dirname), y guarda el resultado en caché. Las tres están acá,
- * porque el paso 13 (routers en archivos separados) no se entiende sin la
- * tercera: si require devolviera un módulo nuevo cada vez, el arreglo de
- * alumnos se duplicaría.
- * ------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------- */
 
 function __normalizar(nombre, desde) {
     if (nombre.charAt(0) !== '.') return nombre;
@@ -602,11 +523,8 @@ function __crearRequire(desde) {
     };
 }
 
-/** Ejecuta un archivo del proyecto con la envoltura de módulo de Node. */
 function __ejecutarArchivo(nombre) {
     const modulo = { exports: {} };
-    /* En caché ANTES de ejecutar: así una dependencia circular devuelve el
-       módulo a medio armar en vez de colgarse, igual que Node. */
     __proceso.modulos[nombre] = modulo;
 
     const codigo = __proceso.archivos[nombre];
@@ -614,8 +532,6 @@ function __ejecutarArchivo(nombre) {
 
     let fn;
     try {
-        /* El sourceURL hace que el número de línea del stack se refiera a este
-           archivo y no a un <anonymous> inútil. */
         fn = new Function(
             'exports', 'require', 'module', '__filename', '__dirname', 'console', 'process',
             codigo + '\n//# sourceURL=' + nombre
@@ -648,14 +564,11 @@ __proceso.process = {
  * Errores presentables
  * ------------------------------------------------------------------------ */
 
-/** Saca el número de línea del stack, descontando el envoltorio de módulo. */
 function __linea(error, archivo) {
     const stack = String(error && error.stack || '');
     const re = new RegExp(archivo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':(\\d+)');
     const m = re.exec(stack);
     if (!m) return null;
-    /* new Function compila `function anonymous(args\n) {\n<cuerpo>` : el cuerpo
-       arranca en la línea 3, así que la línea real es la reportada menos 2. */
     const n = Number(m[1]) - 2;
     return n > 0 ? n : null;
 }
@@ -665,8 +578,6 @@ function __describirError(error) {
     const nombre = error && error.name ? error.name : 'Error';
     let mensaje = error && error.message ? error.message : String(error);
 
-    /* Los mensajes crudos de V8 que más los hacen sufrir, traducidos a algo
-       que se pueda leer sin saber inglés ni saber qué es un prototipo. */
     const traducciones = [
         [/Cannot read propert(?:y|ies) of undefined \(reading '([^']+)'\)/,
          function (m) {
@@ -701,7 +612,7 @@ function __describirError(error) {
 }
 
 /* --------------------------------------------------------------------------
- * El mapa de rutas, para que la interfaz lo pueda mostrar
+ * El mapa de rutas
  * ------------------------------------------------------------------------ */
 
 function __mapaDeRutas(router, prefijo, salida, vistos) {
@@ -733,7 +644,6 @@ function __vaciarConsola() {
     return c;
 }
 
-/** Apaga el proceso: es lo que pasa cuando el alumno hace Ctrl+C. */
 function __apagar() {
     __proceso.modulos = {};
     __proceso.app = null;
@@ -743,7 +653,6 @@ function __apagar() {
     __proceso.consola = [];
 }
 
-/** `node app.js`. */
 function __correr(entrada) {
     __apagar();
     const nombre = entrada || 'app.js';
@@ -775,7 +684,6 @@ function __correr(entrada) {
     };
 }
 
-/** Un pedido HTTP contra el servidor que quedó escuchando. */
 function __pedido(pedido) {
     if (!__proceso.escuchando || !__proceso.app) {
         return { sinServidor: true, consola: __vaciarConsola() };
@@ -788,7 +696,6 @@ function __pedido(pedido) {
     try {
         __proceso.app.__manejar(req, res, function (error) {
             if (error) { errorFinal = error; return; }
-            /* Nadie respondió: el 404 por defecto de Express, con su texto real. */
             res.statusCode = 404;
             res.__cabeceras['content-type'] = 'text/html; charset=utf-8';
             res.__cuerpo = '<pre>Cannot ' + req.method + ' ' + req.path + '</pre>';
@@ -811,8 +718,6 @@ function __pedido(pedido) {
     }
 
     if (!res.__respondio) {
-        /* El pedido se quedó colgado: alguna capa no llamó a next() ni respondió.
-           En Node de verdad esto es el navegador girando para siempre. */
         return {
             colgado: true, consola: __vaciarConsola(),
             error: {
@@ -834,34 +739,9 @@ function __pedido(pedido) {
     };
 }
 
-/* ==========================================================================
+/* ------------------------------------------------------------------------
  * EL VERIFICADOR
- *
- * Los chequeos de cada paso viven en js/pasos.js y son DATO PURO: no hay
- * funciones adentro del banco. El motivo es el mismo que en el parcial de
- * Angular — los pasos viajan al worker por postMessage y structuredClone no
- * transporta funciones — más uno pedagógico: un banco de datos se puede leer,
- * revisar y corregir sin saber cómo está hecho el motor.
- *
- * VOCABULARIO DE UN CHEQUEO
- * -------------------------
- *   { fuente:   { archivo?, debeTener:[{re,que}], noDebeTener:[{re,que}] }, pista? }
- *   { arranque: { escuchando?, puerto?, consolaContiene? },                 pista? }
- *   { pedido:   { metodo, ruta, json?, texto?, cabeceras? },
- *     espera:   { ... },                                                    pista? }
- *
- * ESPERA acepta:
- *   estado           número exacto            estadoEn        [200, 201]
- *   tipoContenido    subcadena del header     esArreglo       true
- *   largo            n elementos              camposEnCadaUno ['id','nombre']
- *   json             igualdad profunda        jsonParcial     subconjunto
- *   contieneObjeto   algún elemento matchea   noContieneObjeto ninguno
- *   texto            cuerpo exacto            textoContiene   subcadena
- *   cuerpoVacio      true
- *
- * Los chequeos de un paso corren EN ORDEN sobre un servidor recién arrancado,
- * así que se puede hacer POST y después GET y contar con que el estado quedó.
- * ========================================================================== */
+ * ---------------------------------------------------------------------- */
 
 function __igual(a, b) {
     if (a === b) return true;
@@ -878,7 +758,6 @@ function __igual(a, b) {
     return true;
 }
 
-/** ¿`obtenido` contiene todo lo que pide `esperado`? (claves de más: OK) */
 function __subconjunto(esperado, obtenido) {
     if (esperado === null || typeof esperado !== 'object') return esperado === obtenido;
     if (Array.isArray(esperado)) {
@@ -901,7 +780,6 @@ function __recortar(texto, tope) {
     return t.length > tope ? t.slice(0, tope) + '…' : t;
 }
 
-/** Devuelve null si pasa, o el texto del problema. */
 function __compararEspera(espera, resp) {
     const e = espera || {};
 
@@ -1015,8 +893,6 @@ function __fallo(titulo, detalle, chequeo, extra) {
 
 function __verificar(chequeos) {
 
-    /* Los chequeos de entorno miran el proyecto, no el código: se resuelven
-       antes de arrancar nada, porque el paso 1 todavía no tiene un app.js. */
     for (let n = 0; n < chequeos.length; n++) {
         const ce = chequeos[n].entorno;
         if (!ce) continue;
@@ -1045,7 +921,7 @@ function __verificar(chequeos) {
 
     for (let i = 0; i < chequeos.length; i++) {
         const c = chequeos[i];
-        if (c.entorno) continue;                 // ya se resolvieron más arriba
+        if (c.entorno) continue;
 
         /* ---- chequeo sobre el texto del archivo --------------------------- */
         if (c.fuente) {
@@ -1128,11 +1004,6 @@ function __verificar(chequeos) {
                 return __fallo('El pedido ' + p.metodo + ' ' + p.ruta + ' quedó colgado',
                                resp.error.pista, c, { error: resp.error, consola: resp.consola });
             }
-            /* Cualquier error cuenta, aunque la respuesta haya salido igual.
-               Es el caso del `return` que falta: el cliente recibe el 404 y
-               parece que anduvo, pero el código siguió y explotó. Express de
-               verdad tampoco lo esconde, lo escupe en la consola del servidor,
-               y ahí es donde se pierde. Acá no. */
             if (resp.error) {
                 return __fallo(
                     resp.estado >= 500
@@ -1189,10 +1060,6 @@ function __atender(orden) {
             };
 
         case 'verificar': {
-            /* Verificar reinicia el servidor: si el alumno lo tenía andando con
-               datos cargados a mano, se los estaríamos borrando sin avisar. Se
-               guarda si estaba corriendo y se vuelve a arrancar limpio después,
-               que es lo mismo que le pasaría con un nodemon. */
             const estaba = __proceso.corriendo;
             const resultado = __verificar(datos.chequeos || []);
             if (estaba) __correr('app.js'); else __apagar();

@@ -1,57 +1,5 @@
-/* ============================================================================
- * angular-inicial.js — EL CONTENIDO DE LA CLASE DE ANGULAR. Dato puro, sin funciones.
- *
- * Mismo esquema que contenido/inicial.js (Express), con dos diferencias:
- *   - los archivos son de un proyecto Angular (app/app.component.ts, ...)
- *   - los chequeos no le hablan a un servidor: miran el DOM de la vista previa.
- *
- * Cubre las secciones 1 a 4 del apunte de repaso: cómo se organiza un proyecto,
- * componentes, los cuatro bindings y las directivas *ngIf, *ngFor y ngClass.
- *
- * ESQUEMA DE UN PASO
- * ------------------
- *   id, titulo, minutos, teoria, consigna, semilla, solucion   (igual que Express)
- *   probar       no se usa
- *   abrir        (opcional) archivo que se abre al entrar al paso. Por omisión app/app.component.ts.
- *   semilla      el proyecto COMPLETO del paso ({ 'ruta': 'texto' }). Al entrar se carga esa
- *                semilla; lo que el alumno escribe se guarda por paso, así volver atrás no lo pierde.
- *   chequeos     [chequeos]  vocabulario abajo
- *
- * BLOQUES (teoria y consigna): los mismos que Express.
- *   { h } { p } { lista } { numerada } { codigo, archivo } { terminal }
- *   { clave } { nota } { tabla } { diagrama }
- *
- * VOCABULARIO DE UN CHEQUEO
- * -------------------------
- *   { fuente: { archivo?, debeTener:[{re,que}], noDebeTener:[{re,que}] }, pista? }
- *        mira el TEXTO de un archivo del alumno. Sirve para lo que no se ve en
- *        pantalla: que declaró el componente, que usó tal decorador.
- *
- *   { arranca: true, pista? }
- *        la aplicación tiene que arrancar sin romperse.
- *
- *   { sinErrores: true, pista? }
- *        Angular no protestó por consola (NG0303, NG0304, TypeError...).
- *
- *   { errorEsperado: 'NG0304', pista? }   -- para pasos que muestran un error a propósito
- *
- *   { dom: { ... }, pista? }     mira la pantalla REAL de la vista previa
- *        contar:    { selector, es? , min?, max? }
- *        textos:    { selector, igual?: [...], contiene?: '...' }
- *        existe:    { selector }    noExiste: { selector }
- *        atributo:  { selector, nombre, igual }
- *        propiedad: { selector, nombre, igual }
- *
- *   { accion: { clic: 'selector' | escribir: ['selector','texto'] }, pista? }
- *        interactúa con la pantalla; los chequeos siguientes ven el resultado.
- *
- * En p/lista/nota/clave/h se puede usar `código` entre acentos graves y
- * **negrita** entre asteriscos dobles. Nada más: no es Markdown.
- * ========================================================================== */
-
 CONTENIDO.angular = [
 
-/* ========================================================================== */
 {
     id: 'p01',
     titulo: 'Qué es Angular y cómo arranca',
@@ -135,7 +83,6 @@ CONTENIDO.angular = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p02',
     titulo: 'Anatomía de un componente',
@@ -224,7 +171,6 @@ CONTENIDO.angular = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p03',
     titulo: 'Un componente adentro de otro',
@@ -346,7 +292,6 @@ CONTENIDO.angular = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p04',
     titulo: 'Interpolación: mostrar datos',
@@ -436,7 +381,6 @@ CONTENIDO.angular = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p05',
     titulo: 'Property binding y la trampa de los tipos',
@@ -522,7 +466,6 @@ CONTENIDO.angular = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p06',
     titulo: 'Event binding y two-way binding',
@@ -623,7 +566,6 @@ CONTENIDO.angular = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p07',
     titulo: 'Directivas: *ngIf',
@@ -723,7 +665,6 @@ CONTENIDO.angular = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p08',
     titulo: 'Directivas: *ngFor',
@@ -837,7 +778,6 @@ CONTENIDO.angular = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p09',
     titulo: 'ngClass y ngStyle',
@@ -973,7 +913,6 @@ CONTENIDO.angular = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p10',
     titulo: 'Desafío: la agenda de turnos',
@@ -1126,7 +1065,6 @@ CONTENIDO.angular = [
         { sinErrores: true,
           pista: 'Si el error habla de ngModel, falta FormsModule; si habla de ngForOf, ngIf o ngClass, falta agregarlos al array imports.' },
 
-        /* Estado inicial: sin filtro */
         { dom: { contar: { selector: '#lista li', es: 4 } },
           pista: 'Sin filtro tienen que verse los 4 turnos.' },
         { dom: { textos: { selector: '#total', igual: ['Turnos: 4'] } },
@@ -1138,7 +1076,6 @@ CONTENIDO.angular = [
         { dom: { contar: { selector: '#lista li.confirmado', es: 2 } },
           pista: 'Los 2 turnos confirmados tienen que llevar la clase "confirmado".' },
 
-        /* Filtro que encuentra a alguien */
         { accion: { escribir: ['#filtro', 'ana'] } },
         { dom: { textos: { selector: '#lista li', igual: ['09:00 - Ana Gómez'] } },
           pista: 'Al escribir "ana" tiene que quedar solo "09:00 - Ana Gómez". La lista tiene que recorrer turnosFiltrados, no turnos.' },
@@ -1147,7 +1084,6 @@ CONTENIDO.angular = [
         { dom: { propiedad: { selector: '#limpiar', nombre: 'disabled', igual: false } },
           pista: 'Con texto en el filtro el botón Limpiar tiene que quedar habilitado.' },
 
-        /* Filtro sin resultados */
         { accion: { escribir: ['#filtro', 'zzz'] } },
         { dom: { existe: { selector: '#vacio' } },
           pista: 'Si nadie coincide tiene que aparecer el párrafo "Sin resultados".' },
@@ -1155,7 +1091,6 @@ CONTENIDO.angular = [
         { dom: { contar: { selector: '#lista li', es: 0 } },
           pista: 'Sin resultados no tiene que haber ningún <li>.' },
 
-        /* El botón limpia el filtro */
         { accion: { clic: '#limpiar' } },
         { dom: { contar: { selector: '#lista li', es: 4 } },
           pista: 'Al hacer clic en Limpiar el filtro se vacía y vuelven los 4 turnos. Llamá a limpiar() en el (click).' },

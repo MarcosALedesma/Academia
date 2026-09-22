@@ -1,40 +1,5 @@
-/* ============================================================================
- * pasos.js — EL CONTENIDO DE LA CLASE. Dato puro, sin funciones.
- *
- * Es el único archivo que hay que tocar para cambiar la clase. Todo lo demás
- * es infraestructura. Mismo esquema que clase-express/js/pasos.js — léase su
- * cabecera si hace falta el porqué de cada campo.
- *
- * ESQUEMA DE UN PASO
- * ------------------
- *   id           string corto y estable. Se usa para guardar el progreso.
- *   titulo       lo que se ve en la lista de la izquierda
- *   minutos      estimación para el docente; la suma se muestra arriba
- *   teoria       [bloques]  lo que se explica
- *   consigna     [bloques]  lo que tiene que hacer el alumno
- *   semilla      { archivo: contenido }  se escribe en el editor SI el archivo
- *                no existe todavía (nunca pisa lo que el alumno escribió)
- *   solucion     { archivo: contenido }  el proyecto ENTERO al terminar el paso.
- *   chequeos     [chequeos]  el vocabulario está documentado en motor.js
- *   probar       [{metodo, ruta, cuerpo, cabeceras}]  botones del panel de pedidos
- *   consolaSugerida ['comando', ...]  botones de la consola
- *
- * BLOQUES (teoria y consigna): { h }, { p }, { lista }, { numerada },
- * { codigo, archivo }, { terminal }, { clave }, { nota }, { tabla }, { diagrama }.
- * { diagrama: 'texto ASCII' } dibuja una caja de flujo (flechas, cajas) para mostrar
- * de un vistazo cómo viaja la información — quién le manda qué a quién, en qué orden.
- * Adentro del texto: `código` y **negrita**. No es Markdown.
- *
- * CHEQUEOS — dos cosas nuevas respecto de clase-express, documentadas en la
- * cabecera del verificador en motor.js:
- *   guardar: { nombre: 'campoDeLaRespuesta' }   guarda un valor para después
- *   '{{nombre}}' en ruta/cabeceras/json          lo reemplaza por lo guardado
- * Sirve para loguearse en un chequeo y usar el token real en el siguiente.
- * ========================================================================== */
-
 CONTENIDO.avanzada = [
 
-/* ========================================================================== */
 {
     id: 'p01',
     titulo: 'De un arreglo a una API profesional',
@@ -155,7 +120,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p02',
     titulo: 'Variables de entorno con dotenv',
@@ -217,7 +181,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p03',
     titulo: 'Conectar la base: Sequelize y async/await',
@@ -299,7 +262,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p04',
     titulo: 'El primer modelo: Usuario',
@@ -354,7 +316,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p05',
     titulo: 'Arquitectura en capas: routes y controllers',
@@ -417,7 +378,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p06',
     titulo: 'Nunca en texto plano: bcrypt',
@@ -472,7 +432,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p07',
     titulo: 'Login: bcrypt.compare y el 401',
@@ -530,7 +489,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p08',
     titulo: 'El token: jsonwebtoken',
@@ -581,7 +539,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p09',
     titulo: 'El guard: un middleware que exige el token',
@@ -666,7 +623,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p10',
     titulo: 'El modelo Tarea: un recurso protegido',
@@ -746,7 +702,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p11',
     titulo: 'Actualizar y borrar: PUT, DELETE y el dueño de cada tarea',
@@ -826,7 +781,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p12',
     titulo: 'Roles y permisos: sólo un admin ve todos los usuarios',
@@ -912,7 +866,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p13',
     titulo: 'Manejo de errores centralizado',
@@ -965,7 +918,6 @@ CONTENIDO.avanzada = [
     ]
 },
 
-/* ========================================================================== */
 {
     id: 'p14',
     titulo: 'Desafío: marcar todas las tareas como hechas',

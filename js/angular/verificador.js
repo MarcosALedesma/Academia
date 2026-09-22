@@ -1,19 +1,3 @@
-/* ============================================================================
- * verificador.js — El banco de pruebas de la clase de Angular.
- *
- * Recibe los chequeos de un paso (dato puro, ver contenido/angular-inicial.js)
- * y los corre EN ORDEN contra la vista previa. Devuelve siempre un objeto; no
- * lanza. Mismo contrato que verificar() en las clases de Express.
- *
- * Dos cosas que este verificador NO hace, a propósito:
- *   - No se fía de `ok`. Angular puede arrancar sin excepción y dejar la pantalla
- *     rota (un NG0304 no lanza nada). Por eso hay chequeos de `sinErrores` y de DOM.
- *   - No chequea tipos. Vista.transpileModule borra los tipos sin comprobarlos,
- *     como se explica en la teoría del paso 1. Un `let x: number = 'a'` no falla acá.
- *
- * `vista` es el objeto de vista.js:  { ejecutar(archivos, entrada), inspeccionar(consulta) }
- * ========================================================================== */
-
 var VerificadorAngular = (function () {
 
     function fallo(titulo, detalle, chequeo, extra) {
@@ -23,7 +7,6 @@ var VerificadorAngular = (function () {
         return r;
     }
 
-    /** Los errores de Angular a veces llegan duplicados (segunda pasada del modo desarrollo). */
     function sinDuplicados(lista) {
         var vistos = {};
         return (lista || []).filter(function (e) {
@@ -34,7 +17,6 @@ var VerificadorAngular = (function () {
         });
     }
 
-    /** Un error de Angular en lenguaje del alumno. Devuelve { codigo, titulo, pista } o null. */
     function traducirError(texto) {
         var m = /(NG0\d+)/.exec(texto);
         var codigo = m ? m[1] : null;
@@ -65,6 +47,10 @@ var VerificadorAngular = (function () {
             }
             return { codigo: codigo, titulo: 'Angular no reconoce ' + prop, pista: pista };
         }
+        if (/No provider for _?HttpClient/.test(texto)) {
+            return { codigo: codigo || 'NG0201', titulo: 'Falta provideHttpClient()',
+                     pista: "Angular no sabe crear HttpClient. Agregá provideHttpClient() al array providers de app.config.ts, con su import desde '@angular/common/http'." };
+        }
         if (codigo === 'NG0301' || /No provider for/.test(texto)) {
             return { codigo: codigo || 'NG0201', titulo: 'Falta un proveedor',
                      pista: 'Estás inyectando algo que Angular no sabe crear. Si es un servicio, tiene que tener @Injectable({ providedIn: \'root\' }).' };
@@ -79,10 +65,17 @@ var VerificadorAngular = (function () {
             return { codigo: null, titulo: 'Algo no es una función',
                      pista: 'Estás llamando con () algo que no es un método. En un (click) se llama al método con paréntesis; en una interpolación, un get se usa SIN paréntesis.' };
         }
+        if (codigo === 'NG0302' || /pipe '[^']+' could not be found/.test(texto)) {
+            var pip = /pipe '([^']+)'/.exec(texto);
+            return { codigo: codigo || 'NG0302', titulo: 'Angular no encuentra el pipe' + (pip ? ' ' + pip[1] : ''),
+                     pista: 'El pipe no está declarado. Un pipe propio va en el array declarations de app.module.ts (con módulos) o en el imports del componente (standalone).' };
+        }
+        if (codigo === 'NG0204' || /Can't resolve all parameters/.test(texto)) {
+            return { codigo: codigo || 'NG0204', titulo: 'Angular no puede resolver el constructor',
+                     pista: 'Falta el tipo de un parámetro del constructor, o la clase que pedís no tiene @Injectable. Se pide así: constructor(private turnosService: TurnosService) {}' };
+        }
         return { codigo: codigo, titulo: 'Angular protestó', pista: null };
     }
-
-    /* ---------------------------------------------------------------------- */
 
     function chequeoFuente(c, archivos, chequeoCompleto) {
         var nombre = c.archivo || 'app/app.component.ts';
@@ -123,6 +116,77 @@ var VerificadorAngular = (function () {
     }
 
     function mostrar(v) { try { return JSON.stringify(v); } catch (e) { return String(v); } }
+
+    function chequeoPedidos(c, vista) {
+        var spec = c.pedidos;
+        return vista.inspeccionar({ pedidos: true }).then(function (r) {
+            var lista = r.pedidos || [];
+            var visto = mostrar(lista.slice(-3));
+            function hay(t) { return lista.some(function (u) { return u.indexOf(t) !== -1; }); }
+            var faltan = (spec.contiene || []).filter(function (t) { return !hay(t); });
+            if (faltan.length) {
+                return fallo('La aplicación no hizo el pedido esperado a la API',
+                             'Ningún pedido contiene "' + faltan[0] + '". Últimos pedidos: ' + visto + '.', c);
+            }
+            if (spec.ultimo !== undefined) {
+                var ultimo = lista[lista.length - 1] || '';
+                if (ultimo.indexOf(spec.ultimo) === -1) {
+                    return fallo('El último pedido a la API no es el esperado',
+                                 'Tendría que contener "' + spec.ultimo + '" y fue "' + ultimo + '".', c);
+                }
+            }
+            var sobran = (spec.noContiene || []).filter(hay);
+            if (sobran.length) {
+                return fallo('Hubo un pedido a la API que no tenía que hacerse', 'Se pidió "' + sobran[0] + '".', c);
+            }
+            return null;
+        });
+    }
+
+    function chequeoConsola(c, vista) {
+        var spec = c.consola;
+
+        function leer() {
+            return vista.inspeccionar({ registro: true }).then(function (r) { return r.registro || []; });
+        }
+
+        if (spec.quieto) {
+            return leer().then(function (antes) {
+                return new Promise(function (ok) { setTimeout(ok, spec.quieto); }).then(leer).then(function (despues) {
+                    if (despues.length !== antes.length) {
+                        return fallo('Siguen apareciendo mensajes en la Consola',
+                                     'En ' + spec.quieto + ' ms aparecieron ' + (despues.length - antes.length) + ' mensajes nuevos.', c);
+                    }
+                    return null;
+                });
+            });
+        }
+
+        return leer().then(function (registro) {
+            var sobran = (spec.noContiene || []).filter(function (t) { return registro.indexOf(t) !== -1; });
+            if (sobran.length) {
+                return fallo('Apareció un mensaje que todavía no tenía que aparecer', 'En la Consola aparece "' + sobran[0] + '".', c);
+            }
+            var faltan = (spec.contiene || []).filter(function (t) { return registro.indexOf(t) === -1; });
+            if (faltan.length) {
+                return fallo('Falta un mensaje en la Consola',
+                             'No aparece "' + faltan[0] + '". En la Consola se ve: ' + mostrar(registro.slice(-6)) + '.', c);
+            }
+            if (spec.enOrden) {
+                var desde = 0;
+                for (var i = 0; i < spec.enOrden.length; i++) {
+                    var pos = registro.indexOf(spec.enOrden[i], desde);
+                    if (pos === -1) {
+                        return fallo('Los mensajes de la Consola no están como se esperaba',
+                                     'Tendría que verse "' + spec.enOrden[i] + '"' + (i ? ' después de "' + spec.enOrden[i - 1] + '"' : '') +
+                                     '. En la Consola se ve: ' + mostrar(registro.slice(-6)) + '.', c);
+                    }
+                    desde = pos + 1;
+                }
+            }
+            return null;
+        });
+    }
 
     function chequeoDom(c, vista) {
         var spec = c.dom;
@@ -183,18 +247,17 @@ var VerificadorAngular = (function () {
         });
     }
 
-    /* ---------------------------------------------------------------------- */
-
-    /**
-     * archivos: el proyecto del alumno.  chequeos: los del paso.
-     * Devuelve una Promise que SIEMPRE resuelve con { ok:true } o el objeto de fallo.
-     */
     function verificar(vista, archivos, chequeos, entrada) {
+        function fijar(modo, resultado) { return vista.inspeccionar({ red: modo }).then(function () { return resultado; }); }
+        return fijar('normal').then(function () {
+            return verificarInterno(vista, archivos, chequeos, entrada);
+        }).then(function (r) { return fijar('normal', r); });
+    }
+
+    function verificarInterno(vista, archivos, chequeos, entrada) {
         var i = 0;
         var resultadoEjecucion = null;
 
-        /* Los chequeos de texto no necesitan arrancar nada: se resuelven primero.
-           Un archivo mal escrito se le dice al alumno antes de esperar a Angular. */
         for (var a = 0; a < chequeos.length; a++) {
             if (!chequeos[a].fuente) continue;
             var f = chequeoFuente(chequeos[a].fuente, archivos, chequeos[a]);
@@ -205,8 +268,6 @@ var VerificadorAngular = (function () {
             resultadoEjecucion = r;
 
             if (!r.ok) {
-                /* El motor devuelve el mensaje real en r.error; se sube a `detalle`
-                   para que el alumno lo lea sin abrir nada. */
                 var det = r.detalle || '';
                 var pista = null;
                 if (r.error) {
@@ -229,9 +290,9 @@ var VerificadorAngular = (function () {
                 if (i >= chequeos.length) return Promise.resolve({ ok: true });
                 var c = chequeos[i++];
 
-                if (c.fuente) return siguiente();          // ya resuelto arriba
+                if (c.fuente) return siguiente();
 
-                if (c.arranca) return siguiente();         // ya sabemos que arrancó
+                if (c.arranca) return siguiente();
 
                 if (c.sinErrores) {
                     var errs = sinDuplicados(resultadoEjecucion.errores);
@@ -250,15 +311,31 @@ var VerificadorAngular = (function () {
                     return siguiente();
                 }
 
+                if (c.accion && c.accion.red) {
+                    return vista.inspeccionar({ red: c.accion.red }).then(function () { return siguiente(); });
+                }
+
+                if (c.accion && c.accion.esperar) {
+                    return new Promise(function (ok) { setTimeout(ok, c.accion.esperar); }).then(siguiente);
+                }
+
                 if (c.accion) {
-                    var consulta = c.accion.clic ? { clic: c.accion.clic } : { escribir: c.accion.escribir };
+                    var consulta = c.accion.clic ? { clic: c.accion.clic } : c.accion.elegir ? { elegir: c.accion.elegir } : { escribir: c.accion.escribir };
                     return vista.inspeccionar(consulta).then(function (rr) {
                         if (!rr.hecho) {
                             return fallo('No encuentro el elemento para interactuar',
-                                         'No existe "' + (c.accion.clic || c.accion.escribir[0]) + '" en la pantalla.', c);
+                                         'No existe "' + (c.accion.clic || (c.accion.elegir || c.accion.escribir)[0]) + '" en la pantalla.', c);
                         }
                         return siguiente();
                     });
+                }
+
+                if (c.pedidos) {
+                    return chequeoPedidos(c, vista).then(function (f4) { return f4 || siguiente(); });
+                }
+
+                if (c.consola) {
+                    return chequeoConsola(c, vista).then(function (f3) { return f3 || siguiente(); });
                 }
 
                 if (c.dom) {

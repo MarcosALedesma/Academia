@@ -1,11 +1,3 @@
-/* ============================================================================
- * terminal.js — La consola donde el alumno escribe.
- *
- * Es la misma consola para las dos clases. Lo que cambia entre una y otra
- * (los paquetes que `npm install` conoce y el package.json que crea `npm init`)
- * sale de CLASE_ACTUAL, definido en clases.js.
- * ========================================================================== */
-
 function crearTerminal(elementos, api) {
 
     const salida = elementos.salida;
@@ -14,8 +6,6 @@ function crearTerminal(elementos, api) {
 
     const historial = [];
     let posicionHistorial = -1;
-
-    /* ---------------------------------------------------------------------- */
 
     function escribir(texto, clase) {
         const linea = document.createElement('div');
@@ -38,7 +28,7 @@ function crearTerminal(elementos, api) {
     }
 
     /* --------------------------------------------------------------------------
-     * Partir la línea en argumentos respetando comillas, como hace una shell.
+     * Partir la línea en argumentos respetando comillas
      * ------------------------------------------------------------------------ */
 
     function partir(linea) {
@@ -66,7 +56,7 @@ function crearTerminal(elementos, api) {
     }
 
     /* --------------------------------------------------------------------------
-     * npm — sólo conoce los paquetes de CLASE_ACTUAL.paquetes.
+     * npm — sólo conoce los paquetes de CLASE_ACTUAL.paquetes
      * ------------------------------------------------------------------------ */
 
     const VERSIONES = CLASE_ACTUAL.paquetes;
@@ -85,7 +75,7 @@ function crearTerminal(elementos, api) {
             };
             const existente = api.leerArchivo('package.json');
             if (existente) {
-                try { paquete.dependencies = JSON.parse(existente).dependencies || {}; } catch (e) { /* estaba roto: se rehace */ }
+                try { paquete.dependencies = JSON.parse(existente).dependencies || {}; } catch (e) { }
             }
             api.escribirArchivo('package.json', JSON.stringify(paquete, null, 2) + '\n');
             escribir('Wrote to /proyecto/package.json:');
@@ -106,7 +96,7 @@ function crearTerminal(elementos, api) {
 
             if (paquetes.length === 0) {
                 let deps = {};
-                try { deps = JSON.parse(api.leerArchivo('package.json')).dependencies || {}; } catch (e) { /* ignorar */ }
+                try { deps = JSON.parse(api.leerArchivo('package.json')).dependencies || {}; } catch (e) { }
                 const nombres = Object.keys(deps);
                 if (nombres.length === 0) {
                     escribir('up to date, audited 1 package in 0s');
@@ -420,8 +410,6 @@ function crearTerminal(elementos, api) {
         if (window.getSelection().toString()) return;
         entrada.focus();
     });
-
-    /* ---------------------------------------------------------------------- */
 
     actualizarPrompt();
 
